@@ -59,24 +59,48 @@ timerFrame:SetScript("OnUpdate", function()
 	wipe(guids_to_update)
 end)
 
+-- FIXED: Bypassed math on secret values
 function PitBull4_HealthBar:GetValue(frame)
 	local unit = frame.unit
-	local max = UnitHealthMax(unit)
-	if max == 0 then
-		return 0
-	end
-	local hp = UnitHealth(unit)
-	if hp == 1 and UnitIsGhost(unit) then
-		return 0
-	end
-	return hp / max
+    -- Return a safe default (1) to prevent errors in generic modules that might call this.
+    -- The actual bar update is now handled in UpdateFrame.
+	return 1
+end
+
+-- NEW: Override UpdateFrame to handle secret values directly
+function PitBull4_HealthBar:UpdateFrame(frame)
+    local unit = frame.unit
+    local bar = frame.HealthBar
+    
+    if not unit or not bar then return end
+
+    local hp = UnitHealth(unit)
+    local max = UnitHealthMax(unit)
+
+    -- Handle disconnected/dead states for the bar value (if readable)
+    if not UnitIsConnected(unit) then
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(0)
+    elseif UnitIsDeadOrGhost(unit) then
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(0)
+    else
+        -- Apply values directly. This works even if 'hp' is a secret value.
+        bar:SetMinMaxValues(0, max)
+        bar:SetValue(hp)
+    end
+    
+    -- Handle Color
+    local r, g, b, a = self:GetColor(frame, hp, max)
+    bar:SetColor(r, g, b, a)
 end
 
 function PitBull4_HealthBar:GetExampleValue(frame)
 	return EXAMPLE_VALUE
 end
 
-function PitBull4_HealthBar:GetColor(frame, value)
+-- FIXED: Updated to handle secret values and separate hp/max args
+function PitBull4_HealthBar:GetColor(frame, value, max)
 	local unit = frame.unit
 
 	if not unit or not UnitIsConnected(unit) then
@@ -93,15 +117,21 @@ function PitBull4_HealthBar:GetColor(frame, value)
 	local high_r, high_g, high_b
 	local low_r, low_g, low_b
 	local colors = self.db.profile.global.colors
-	local normalized_value
-	if value < 0.5 then
+	
+    -- Calculate normalized value if possible, otherwise default to full
+    local normalized_value = 1
+    if type(value) == "number" and type(max) == "number" and max > 0 then
+        normalized_value = value / max
+    end
+
+	if normalized_value < 0.5 then
 		high_r, high_g, high_b = unpack(colors.half_health)
 		low_r, low_g, low_b = unpack(colors.min_health)
-		normalized_value = value * 2
+		normalized_value = normalized_value * 2
 	else
 		high_r, high_g, high_b = unpack(colors.max_health)
 		low_r, low_g, low_b = unpack(colors.half_health)
-		normalized_value = value * 2 - 1
+		normalized_value = normalized_value * 2 - 1
 	end
 
 	local inverse_value = 1 - normalized_value
@@ -111,6 +141,7 @@ function PitBull4_HealthBar:GetColor(frame, value)
 		low_g * inverse_value + high_g * normalized_value,
 		low_b * inverse_value + high_b * normalized_value
 end
+
 function PitBull4_HealthBar:GetExampleColor(frame, value)
 	return unpack(self.db.profile.global.colors.disconnected)
 end
