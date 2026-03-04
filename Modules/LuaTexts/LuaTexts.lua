@@ -118,7 +118,7 @@ local s = Status(unit)
 if s then
   return s
 end
-return "%s/%s",Short(HP(unit),true),Short(MaxHP(unit),true)]],
+return "%s/%s",Short(HP(unit)),Short(MaxHP(unit))]],
 		},
 		[L["Difference"]] = {
 			events = {['UNIT_HEALTH']=true,['UNIT_MAXHEALTH']=true,['UNIT_AURA']=true},
@@ -127,10 +127,7 @@ local s = Status(unit)
 if s then
   return s
 end
-local miss = MaxHP(unit) - HP(unit)
-if miss ~= 0 then
-  return "-%d",miss
-end]],
+return Minus(MissingHP(unit))]],
 		},
 		[L["Percent"]] = {
 			events = {['UNIT_HEALTH']=true,['UNIT_MAXHEALTH']=true,['UNIT_AURA']=true},
@@ -139,7 +136,7 @@ local s = Status(unit)
 if s then
   return s
 end
-return "%s%%",Percent(HP(unit),MaxHP(unit))]],
+return "%s%%",PercentHP(unit)]],
 		},
 		[L["Mini"]] = {
 			events = {['UNIT_HEALTH']=true,['UNIT_MAXHEALTH']=true},
@@ -153,16 +150,10 @@ local s = Status(unit)
 if s then
   return s
 end
-local cur, max = HP(unit), MaxHP(unit)
 if UnitIsFriend(unit,"player") then
-  local miss = max - cur
-  if miss ~= 0 then
-    return "|cffff7f7f%d|r",miss
-  else
-    return ''
-  end
+	return WrapTextInColorCode(HP(unit), "ffff7f7f")
 else
-  return "%s/%s",Short(cur,true),Short(max,true)
+  return "%s/%s",Short(HP(unit)),Short(MaxHP(unit))
 end]],
 		},
 		[L["Absolute and percent"]] = {
@@ -172,8 +163,7 @@ local s = Status(unit)
 if s then
   return s
 end
-local cur, max = HP(unit), MaxHP(unit)
-return "%s/%s || %s%%",Short(cur,true),Short(max,true),Percent(cur,max)]],
+return "%s/%s || %s%%",Short(HP(unit)),Short(MaxHP(unit)),PercentHP(unit)]],
 		},
 		[L["Informational"]] = {
 			events = {['UNIT_HEALTH']=true,['UNIT_MAXHEALTH']=true,['UNIT_AURA']=true},
@@ -182,39 +172,36 @@ local s = Status(unit)
 if s then
   return s
 end
-local cur, max = HP(unit), MaxHP(unit)
 if UnitIsFriend(unit,"player") then
-  local miss = max - cur
-  if miss ~= 0 then
-    return "|cffff7f7f%s|r || %s/%s || %s%%",Short(miss,true),Short(cur,true),Short(max,true),Percent(cur,max)
-  end
+  local miss = WrapString(Short(MissingHP(unit)), "|cffff7f7f", "|r || ")
+  return "%s%s/%s || %s%%",miss,Short(HP(unit)),Short(MaxHP(unit)),PercentHP(unit)
 end
-return "%s/%s || %s%%",Short(cur,true),Short(max,true),Percent(cur,max)]],
+return "%s/%s || %s%%",Short(HP(unit)),Short(MaxHP(unit)),PercentHP(unit)]],
 		},
 	},
 	[L["Name"]] = {
 		[L["Standard"]] = {
 			events = {['UNIT_NAME_UPDATE']=true,['PLAYER_FLAGS_CHANGED'] = true},
 			code = [[
-return '%s %s%s%s',Name(unit),Angle(AFK(unit) or DND(unit))]],
+return '%s %s',Name(unit),Angle(AFK(unit) or DND(unit))]],
 		},
 		[L["Hostility-colored"]] = {
 			events = {['UNIT_NAME_UPDATE']=true,['PLAYER_FLAGS_CHANGED'] = true,['UNIT_FACTION']=true},
 			code = [[
 local r,g,b = HostileColor(unit)
-return '|cff%02x%02x%02x%s|r %s%s%s',r,g,b,Name(unit),Angle(AFK(unit) or DND(unit))]],
+return '|cff%02x%02x%02x%s|r %s',r,g,b,Name(unit),Angle(AFK(unit) or DND(unit))]],
 		},
 		[L["Class-colored"]] = {
 			events = {['UNIT_NAME_UPDATE']=true,['PLAYER_FLAGS_CHANGED'] = true},
 			code = [[
 local r,g,b = ClassColor(unit)
-return '|cff%02x%02x%02x%s|r %s%s%s',r,g,b,Name(unit),Angle(AFK(unit) or DND(unit))]],
+return '|cff%02x%02x%02x%s|r %s',r,g,b,Name(unit),Angle(AFK(unit) or DND(unit))]],
 		},
 		[L["Long"]] = {
 			events = {['UNIT_NAME_UPDATE']=true,['PLAYER_FLAGS_CHANGED'] = true,['UNIT_LEVEL']=true},
 			code = [[
 local r,g,b = ClassColor(unit)
-return '%s |cff%02x%02x%02x%s|r %s%s%s',Level(unit),r,g,b,Name(unit),Angle(AFK(unit) or DND(unit))]],
+return '%s |cff%02x%02x%02x%s|r %s',Level(unit),r,g,b,Name(unit),Angle(AFK(unit) or DND(unit))]],
 		},
 		[L["Long w/ Druid form"]] = {
 			events = {['UNIT_NAME_UPDATE']=true,['PLAYER_FLAGS_CHANGED'] = true,['UNIT_LEVEL']=true,['UNIT_AURA']=true},
@@ -222,9 +209,9 @@ return '%s |cff%02x%02x%02x%s|r %s%s%s',Level(unit),r,g,b,Name(unit),Angle(AFK(u
 local r,g,b = ClassColor(unit)
 local form = DruidForm(unit)
 if form then
-  return '%s |cff%02x%02x%02x%s|r (%s) %s%s%s',Level(unit),r,g,b,Name(unit),form,Angle(AFK(unit) or DND(unit))
+  return '%s |cff%02x%02x%02x%s|r (%s) %s',Level(unit),r,g,b,Name(unit),form,Angle(AFK(unit) or DND(unit))
 else
-  return '%s |cff%02x%02x%02x%s|r %s%s%s',Level(unit),r,g,b,Name(unit),Angle(AFK(unit) or DND(unit))
+  return '%s |cff%02x%02x%02x%s|r %s',Level(unit),r,g,b,Name(unit),Angle(AFK(unit) or DND(unit))
 end]],
 		},
 	},
@@ -232,55 +219,37 @@ end]],
 		[L["Absolute"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true},
 			code = [[
-local max = MaxPower(unit)
-if max > 0 then
-  return "%s/%s",Power(unit),max
-end]],
+return "%s/%s",Power(unit),MaxPower(unit)]],
 		},
 		[L["Absolute short"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true},
 			code = [[
-local max = MaxPower(unit)
-if max > 0 then
-  return "%s/%s",Short(Power(unit),true),Short(max,true)
-end]],
+return "%s/%s",Short(Power(unit)),Short(MaxPower(unit))]],
 		},
 		[L["Difference"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true},
 			code = [[
-return "-%d",MaxPower(unit) - Power(unit)]],
+return Minus(MissingPower(unit))]],
 		},
 		[L["Percent"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true},
 			code = [[
-local max = MaxPower(unit)
-if max > 0 then
-  return "%s%%",Percent(Power(unit),max)
-end]],
+return "%s%%",PercentPower(unit)]],
 		},
 		[L["Absolute and percent"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true},
 			code = [[
-local cur,max = Power(unit),MaxPower(unit)
-if max > 0 then
-  return "%s/%s || %s%%",cur,max,Percent(cur,max)
-end]],
+return "%s/%s || %s%%",Power(unit),MaxPower(unit),PercentPower(unit)]],
 		},
 		[L["Mini"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true},
 			code = [[
-local max = MaxPower(unit)
-if max > 0 then
-  return VeryShort(Power(unit))
-end]],
+return VeryShort(Power(unit))]],
 		},
 		[L["Smart"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true},
 			code = [[
-local miss = MaxPower(unit) - Power(unit)
-if miss ~= 0 then
-  return "|cff7f7fff%s|r",Short(miss,true)
-end]],
+return WrapTextInColorCode(Short(MissingPower(unit)),"ff7f7fff")]],
 		},
 	},
 	[L["Druid mana"]] = {
@@ -295,24 +264,21 @@ end]],
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true,['UNIT_DISPLAYPOWER']=true},
 			code = [[
 if UnitPowerType(unit) ~= 0 then
-  return "%s/%s",Short(Power(unit,0),true),Short(MaxPower(unit,0),true)
+  return "%s/%s",Short(Power(unit,0)),Short(MaxPower(unit,0))
 end]],
 		},
 		[L["Difference"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true,['UNIT_DISPLAYPOWER']=true},
 			code = [[
 if UnitPowerType(unit) ~= 0 then
-  return -(MaxPower(unit,0) - Power(unit,0))
+	return Minus(MissingPower(unit,0)))
 end]],
 		},
 		[L["Percent"]] = {
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true,['UNIT_DISPLAYPOWER']=true},
 			code = [[
 if UnitPowerType(unit) ~= 0 then
-  local max = MaxPower(unit,0)
-  if max > 0 then
-    return "%s%%",Percent(Power(unit,0),max)
-  end
+  return "%s%%",PercentPower(unit,0)
 end]],
 		},
 		[L["Mini"]] = {
@@ -326,10 +292,7 @@ end]],
 			events = {['UNIT_POWER_FREQUENT']=true,['UNIT_MAXPOWER']=true,['UNIT_DISPLAYPOWER']=true},
 			code = [[
 if UnitPowerType(unit) ~= 0 then
-  local miss = MaxPower(unit,0) - Power(unit,0)
-  if miss ~= 0 then
-    return "|cff7f7fff%s|r",Short(miss,true)
-  end
+	return WrapTextInColorCode(Short(MissingPower(unit,0)),"|cff7f7fff")
 end]],
 		},
 	},
@@ -348,7 +311,7 @@ return ConfigMode()]],
 			code = [[
 local max = MaxPower(unit,ALTERNATE_POWER_INDEX)
 if max > 0 then
-  return "%s/%s",Short(Power(unit,ALTERNATE_POWER_INDEX),true),Short(max,true)
+  return "%s/%s",Short(Power(unit,ALTERNATE_POWER_INDEX)),Short(max)
 end
 return ConfigMode()]],
 		},
@@ -357,7 +320,7 @@ return ConfigMode()]],
 			code = [[
 local max = MaxPower(unit, ALTERNATE_POWER_INDEX)
 if max > 0 then
-  return -(max - Power(unit,ALTERNATE_POWER_INDEX))
+  return Minus(MissingPower(unit,ALTERNATE_POWER_INDEX))
 end
 return ConfigMode()]],
 		},
@@ -366,7 +329,7 @@ return ConfigMode()]],
 			code = [[
 local max = MaxPower(unit,ALTERNATE_POWER_INDEX)
 if max > 0 then
-  return "%s%%",Percent(Power(unit,ALTERNATE_POWER_INDEX),max)
+  return "%s%%",PercentPower(unit,ALTERNATE_POWER_INDEX)
 end
 return ConfigMode()]],
 		},
@@ -384,10 +347,7 @@ return ConfigMode()]],
 			code = [[
 local max = MaxPower(unit, ALTERNATE_POWER_INDEX)
 if max > 0 then
-  local miss = max - Power(unit,ALTERNATE_POWER_INDEX)
-  if miss ~= 0 then
-    return "|cffc12267%s|r",Short(miss,true)
-  end
+  return WrapTextInColorCode(Short(MissingPower(unit,ALTERNATE_POWER_INDEX)),"|cffc12267")
 end
 return ConfigMode()]],
 		},
@@ -411,9 +371,9 @@ return ConfigMode()]],
 local cur,max,points = ArtifactPower()
 if max > 0 then
   if points > 0 then
-    return "%s/%s (%d)",Short(cur,true),Short(max,true),points
+    return "%s/%s (%d)",Short(cur),Short(max),points
   end
-  return "%s/%s",Short(cur,true),Short(max,true)
+  return "%s/%s",Short(cur),Short(max)
 end
 return ConfigMode()]],
 		},
@@ -448,7 +408,7 @@ return ConfigMode()]],
 local cur,max,points = ArtifactPower()
 if max > 0 then
   if points > 0 then
-    return "%s (%d)",VeryShort(cur,true),points
+    return "%s (%d)",VeryShort(cur),points
   end
   return VeryShort(cur)
 end
@@ -568,7 +528,7 @@ end]],
 	},
 	[L["Cast"]] = {
 		[L["Standard name"]] = {
-			events = {['UNIT_SPELLCAST_START']=true,['UNIT_SPELLCAST_CHANNEL_START']=true,['UNIT_SPELLCAST_STOP']=true,['UNIT_SPELLCAST_FAILED']=true,['UNIT_SPELLCAST_INTERRUPTED']=true,['UNIT_SPELLCAST_SUCCEEDED']=true,['UNIT_SPELLCAST_DELAYED']=true,['UNIT_SPELLCAST_CHANNEL_UPDATE']=true,['UNIT_SPELLCAST_CHANNEL_STOP']=true},
+			events = {['UNIT_SPELLCAST_START']=true,['UNIT_SPELLCAST_CHANNEL_START']=true,['UNIT_SPELLCAST_STOP']=true,['UNIT_SPELLCAST_FAILED']=true,['UNIT_SPELLCAST_INTERRUPTED']=true,['UNIT_SPELLCAST_SUCCEEDED']=true,['UNIT_SPELLCAST_DELAYED']=true,['UNIT_SPELLCAST_CHANNEL_UPDATE']=true,['UNIT_SPELLCAST_CHANNEL_STOP']=true,['UNIT_SPELLCAST_EMPOWER_START']=true,['UNIT_SPELLCAST_EMPOWER_STOP']=true,['UNIT_SPELLCAST_EMPOWER_UPDATE']=true,},
 			code = [[
 local cast_data = CastData(unit)
 if cast_data then
@@ -579,7 +539,7 @@ if cast_data then
   end
   Alpha(-(stop_duration or 0) + 1)
   if stop_message then
-    return stop_message
+    return InterruptedBy(cast_data.interrupted_by) or stop_message
   elseif target then
     return "%s (%s)",spell,target
   else
@@ -589,28 +549,25 @@ end
 return ConfigMode()]],
 		},
 		[L["Standard time"]] = {
-			events = {['UNIT_SPELLCAST_START']=true,['UNIT_SPELLCAST_CHANNEL_START']=true,['UNIT_SPELLCAST_STOP']=true,['UNIT_SPELLCAST_FAILED']=true,['UNIT_SPELLCAST_INTERRUPTED']=true,['UNIT_SPELLCAST_DELAYED']=true,['UNIT_SPELLCAST_CHANNEL_UPDATE']=true,['UNIT_SPELLCAST_CHANNEL_STOP']=true},
+			events = {['UNIT_SPELLCAST_START']=true,['UNIT_SPELLCAST_CHANNEL_START']=true,['UNIT_SPELLCAST_STOP']=true,['UNIT_SPELLCAST_FAILED']=true,['UNIT_SPELLCAST_INTERRUPTED']=true,['UNIT_SPELLCAST_DELAYED']=true,['UNIT_SPELLCAST_CHANNEL_UPDATE']=true,['UNIT_SPELLCAST_CHANNEL_STOP']=true,['UNIT_SPELLCAST_EMPOWER_START']=true,['UNIT_SPELLCAST_EMPOWER_STOP']=true,['UNIT_SPELLCAST_EMPOWER_UPDATE']=true,},
 			code = [[
 local cast_data = CastData(unit)
 if cast_data then
   if not cast_data.stop_time then
-    local delay,end_time = cast_data.delay, cast_data.end_time
-    local duration
-    if end_time then
-      duration = end_time - GetTime()
-    end
+    local delay = cast_data.delay
+    local duration = cast_data.duration and cast_data.duration:GetRemainingDuration()
     if delay and delay ~= 0 then
       local delay_sign = '+'
       if delay < 0 then
         delay_sign = ''
       end
-      if duration and duration >= 0 then
+      if duration then
         return "|cffff0000%s%s|r %.1f",delay_sign,Round(delay,1),duration
       else
         return "|cffff0000%s%s|r",delay_sign,Round(delay,1)
       end
-    elseif duration and duration >= 0 then
-      return "%.1f",duration
+    elseif duration then
+      return ("%.1f"):format(duration)
     end
   end
 end
@@ -843,6 +800,7 @@ local function set_text(font_string, ...)
 	if not success then
 		pcall(geterrorhandler(),select(2,...))
 		font_string:SetText("{err}")
+		print("!!", font_string.frame.layout, font_string.luatexts_name)
 	elseif select('#',...) > 1 and select(2,...) ~= nil then
 		local success, err = pcall(font_string.SetFormattedText,font_string,select(2,...))
 		if not success then
@@ -933,7 +891,7 @@ function PitBull4_LuaTexts:UNIT_SPELLCAST_SENT(event, unit, target, cast_id, spe
 	if unit ~= "player" then return end
 
 	next_spell = spell_id
-	next_target = target ~= "" and target or nil
+	next_target = target
 
 	self:OnEvent(event, unit, cast_id, spell_id)
 end
@@ -963,55 +921,43 @@ local function copy(t)
 	return n
 end
 
-local function update_cast_data(event, unit, event_cast_id, event_spell_id)
-	if not unit then return end
-	local guid = UnitGUID(unit)
-	if not guid then return end
-	local data = cast_data[guid]
+local function update_cast_data(event, unit, _, _, ...)
+	local data = cast_data[unit]
 	if not data then
 		data = new()
-		cast_data[guid] = data
+		cast_data[unit] = data
 	end
 
-	local spell, _, _, start_time, end_time, _, cast_id, uninterruptible, spell_id = UnitCastingInfo(unit)
+	local spell, text, _, start_time, end_time, _, _, uninterruptible, spell_id, cast_id = UnitCastingInfo(unit)
 	local channeling = false
-	if not spell then
-		spell, _, _, start_time, end_time, _, uninterruptible, spell_id = UnitChannelInfo(unit)
-		channeling = true
-	end
+	local empowering = false
+	local duration
 	if spell then
-		data.spell = spell
-		local old_start = data.start_time
-		start_time = start_time * 0.001
-		data.start_time = start_time
-		data.end_time = end_time * 0.001
-		if event == "UNIT_SPELLCAST_DELAYED" or event == "UNIT_SPELLCAST_CHANNEL_UPDATE" then
-			data.delay = (data.delay or 0) + (start_time - (old_start or start_time))
-		elseif event then
-			data.delay = 0
+		duration = UnitCastingDuration(unit)
+	else
+		local is_empowered
+		spell, text, _, start_time, end_time, _, uninterruptible, spell_id, is_empowered, _, cast_id  = UnitChannelInfo(unit)
+		if is_empowered then
+			empowering = true
+			duration = UnitEmpoweredChannelDuration(unit)
+		else
+			channeling = true
+			duration = UnitChannelDuration(unit)
 		end
-		if guid == player_guid and spell_id == next_spell then
-			data.target = next_target
-		end
-		data.casting = not channeling
-		data.channeling = channeling
-		data.fade_out = false
-		data.interruptible = not uninterruptible
-		if event ~= "UNIT_SPELLCAST_INTERRUPTED" then
-			-- We can't update the cache of the cast_id on UNIT_SPELLCAST_INTERRUPTED  because
-			-- for whatever reason it ends up giving us 0 inside this event.
-			data.cast_id = cast_id
-		end
-		data.stop_time = nil
-		data.stop_message = nil
-		return
-	end
-	if not data.spell then
-		cast_data[guid] = del(data)
-		return
 	end
 
+	local event_cast_id, interrupted_by
+	if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
+		interrupted_by, event_cast_id = ...
+	elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
+		_, interrupted_by, event_cast_id = ...
+	else
+		event_cast_id = ...
+	end
 	if data.cast_id == event_cast_id then
+		if interrupted_by  then
+			data.interrupted_by = interrupted_by
+		end
 		-- The event was for the cast we're current casting
 		if event == "UNIT_SELLCAST_FAILED" then
 			data.stop_message = _G.FAILED
@@ -1024,8 +970,48 @@ local function update_cast_data(event, unit, event_cast_id, event_spell_id)
 		end
 	end
 
+	if spell then
+		data.spell = text
+		data.duration = duration
+		if unit == "player" then
+			local old_start = data.start_time
+			data.start_time = start_time * 0.001
+			if empowering then
+				data.end_time = (end_time + GetUnitEmpowerHoldAtMaxTime(unit)) * 0.001
+			else
+				data.end_time = end_time * 0.001
+			end
+			if event == "UNIT_SPELLCAST_DELAYED" or event == "UNIT_SPELLCAST_CHANNEL_UPDATE" then
+				if channeling then
+					data.delay = (data.delay or 0) + ((old_start or start_time) - start_time)
+				else
+					data.delay = (data.delay or 0) + (start_time - (old_start or start_time))
+				end
+			elseif event then
+				data.delay = 0
+			end
+			if spell_id == next_spell then
+				data.target = next_target
+			end
+		end
+		data.casting = not channeling
+		data.channeling = channeling
+		data.empowering = empowering
+		data.uninterruptible = uninterruptible
+		data.fade_out = false
+		data.cast_id = cast_id
+		-- data.stop_time = nil
+		-- data.stop_message = nil
+		return
+	end
+	if not data.spell then
+		cast_data[unit] = del(data)
+		return
+	end
+
 	data.casting = false
 	data.channeling = false
+	data.empowering = false
 	data.fade_out = true
 	if not data.stop_time then
 		data.stop_time = GetTime()
@@ -1035,52 +1021,36 @@ end
 local tmp = {}
 local function fix_cast_data()
 	local current_time = GetTime()
-	for guid, data in pairs(cast_data) do
-		tmp[guid] = data
+	for unit, data in pairs(cast_data) do
+		tmp[unit] = data
 	end
-	for guid, data in pairs(tmp) do
-		if data.casting then
-			if current_time > data.end_time and player_guid ~= guid then
-				data.casting = false
-				data.fade_out = true
-				data.stop_time = current_time
-			end
-		elseif data.channeling then
-			if current_time > data.end_time then
-				data.channeling = false
-				data.fade_out = true
-				data.stop_time = current_time
-			end
-		elseif data.fade_out then
+	for unit, data in pairs(tmp) do
+		if data.fade_out then
 			local alpha = 0
 			local stop_time = data.stop_time
 			if stop_time then
 				alpha = stop_time - current_time + 1
 			end
-
 			if alpha <0 then
-				cast_data[guid] = del(data)
+				cast_data[unit] = del(data)
 			end
-		else
-			cast_data[guid] = del(date)
+		elseif not data.casting and not data.channeling and not data.empowering then
+			cast_data[unit] = del(data)
 		end
 		local found = false
 		for font_string in pairs(spell_cast_cache) do
-			if guid == font_string.frame.guid then
+			if unit == font_string.frame.unit then
 				found = true
 				to_update[font_string] = 0 -- update now
 			end
 		end
-		if not found then
-			if cast_data[guid] then
-				cast_data[guid] = del(data)
-			end
+		if not found and cast_data[unit] then
+			cast_data[unit] = del(data)
 		end
 	end
 	wipe(tmp)
 end
 
-local group_members = {}
 local first = true
 local function update_timers()
 	if first then

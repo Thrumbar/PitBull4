@@ -28,6 +28,16 @@ local dead_times = PitBull4_LuaTexts.dead_times
 local group_members = PitBull4_LuaTexts.group_members
 
 
+
+local WrapString = C_StringUtil.WrapString
+ScriptEnv.WrapString = WrapString
+
+local TruncateWhenZero = C_StringUtil.TruncateWhenZero
+ScriptEnv.TruncateWhenZero = TruncateWhenZero
+
+local FloorToNearestString = C_StringUtil.FloorToNearestString
+ScriptEnv.FloorToNearestString = FloorToNearestString
+
 local function unit_guid(unit)
 	if not C_Secrets.ShouldUnitIdentityBeSecret(unit) then
 		-- Update on wacky frames if we're not locked down
@@ -121,196 +131,58 @@ local function Name(unit, show_server)
 			return VehicleName(unit)
 		end
 	end
+
 	local name, server = UnitName(unit)
 	if UnitInPartyIsAI(unit) and (C_LFGInfo.IsInLFGFollowerDungeon() or C_PartyInfo.IsPartyWalkIn()) then
 		name = LFG_FOLLOWER_NAME_PREFIX:format(name)
-	elseif show_server and server and server ~= "" then
+	elseif show_server and not issecretvalue(server) and server and server ~= "" then
 		name = FULL_PLAYER_NAME:format(name, server)
 	end
 	return name
 end
 ScriptEnv.Name = Name
 
-local L_DAY_ONELETTER_ABBR    = DAY_ONELETTER_ABBR:gsub("%s*%%d%s*", "")
-local L_HOUR_ONELETTER_ABBR   = HOUR_ONELETTER_ABBR:gsub("%s*%%d%s*", "")
-local L_MINUTE_ONELETTER_ABBR = MINUTE_ONELETTER_ABBR:gsub("%s*%%d%s*", "")
-local L_SECOND_ONELETTER_ABBR = SECOND_ONELETTER_ABBR:gsub("%s*%%d%s*", "")
-local L_DAYS_ABBR = DAYS_ABBR:gsub("%s*%%d%s*","")
-local L_HOURS_ABBR = HOURS_ABBR:gsub("%s*%%d%s*","")
-local L_MINUTES_ABBR = MINUTES_ABBR:gsub("%s*%%d%s*","")
-local L_SECONDS_ABBR = SECONDS_ABBR:gsub("%s*%%d%s*","")
-local L_HUGE = "%s***"
-
-local t = {}
-local function FormatDuration(number, format)
+local L_DAY_ONELETTER_ABBR = DAY_ONELETTER_ABBR:gsub("%s*%%d%s*", "")
+local function FormatDuration(number)
 	local negative = ""
 	if number < 0 then
 		number = -number
 		negative = "-"
 	end
 
-	if not format then
-		format = "c"
-	else
-		format = format:sub(1, 1):lower()
+	if number == math.huge then
+		return "**:**:**"
+	elseif number >= 60*60*24 then
+		return ("%s%.0f%s %d:%02d:%02d"):format(negative, math.floor(number/86400), L_DAY_ONELETTER_ABBR, number/3600 % 24, number/60 % 60, number % 60)
+	elseif number >= 60*60 then
+		return ("%s%d:%02d:%02d"):format(negative, number/3600, number/60 % 60, number % 60)
 	end
-
-	if format == "e" then
-		if number == math.huge then
-			return L_HUGE:format(negative)
-		end
-
-		t[#t+1] = negative
-
-		number = math.floor(number + 0.5)
-
-		local first = true
-
-		if number >= 60*60*24 then
-			local days = math.floor(number / (60*60*24))
-			number = number % (60*60*24)
-			t[#t+1] = ("%.0f"):format(days)
-			t[#t+1] = " "
-			t[#t+1] = L_DAYS_ABBR
-			first = false
-		end
-
-		if number >= 60*60 then
-			local hours = math.floor(number / (60*60))
-			number = number % (60*60)
-			if not first then
-				t[#t+1] = " "
-			else
-				first = false
-			end
-			t[#t+1] = hours
-			t[#t+1] = " "
-			t[#t+1] = L_HOURS_ABBR
-		end
-
-		if number >= 60 then
-			local minutes = math.floor(number / 60)
-			number = number % 60
-			if not first then
-				t[#t+1] = " "
-			else
-				first = false
-			end
-			t[#t+1] = minutes
-			t[#t+1] = " "
-			t[#t+1] = L_MINUTES_ABBR
-		end
-
-		if number >= 1 or first then
-			local seconds = number
-			if not first then
-				t[#t+1] = " "
-			else
-				first = false
-			end
-			t[#t+1] = seconds
-			t[#t+1] = " "
-			t[#t+1] = L_SECONDS_ABBR
-		end
-		local s = table.concat(t)
-		wipe(t)
-		return s
-	elseif format == "f" then
-		if number == math.huge then
-			return L_HUGE:format(negative)
-		elseif number >= 60*60*24 then
-			return ("%s%.0f%s %02d%s %02d%s %02d%s"):format(negative, math.floor(number/86400), L_DAY_ONELETTER_ABBR, number/3600 % 24, L_HOUR_ONELETTER_ABBR, number/60 % 60, L_MINUTE_ONELETTER_ABBR, number % 60, L_SECOND_ONELETTER_ABBR)
-		elseif number >= 60*60 then
-			return ("%s%d%s %02d%s %02d%s"):format(negative, number/3600, L_HOUR_ONELETTER_ABBR, number/60 % 60, L_MINUTE_ONELETTER_ABBR, number % 60, L_SECOND_ONELETTER_ABBR)
-		elseif number >= 60 then
-			return ("%s%d%s %02d%s"):format(negative, number/60, L_MINUTE_ONELETTER_ABBR, number % 60, L_SECOND_ONELETTER_ABBR)
-		else
-			return ("%s%d%s"):format(negative, number, L_SECOND_ONELETTER_ABBR)
-		end
-	elseif format == "s" then
-		if number == math.huge then
-			return L_HUGE:format(negative)
-		elseif number >= 2*60*60*24 then
-			return ("%s%.1f %s"):format(negative, number/86400, L_DAYS_ABBR)
-		elseif number >= 2*60*60 then
-			return ("%s%.1f %s"):format(negative, number/3600, L_HOURS_ABBR)
-		elseif number >= 2*60 then
-			return ("%s%.1f %s"):format(negative, number/60, L_MINUTES_ABBR)
-		elseif number >= 3 then
-			return ("%s%.0f %s"):format(negative, number, L_SECONDS_ABBR)
-		else
-			return ("%s%.1f %s"):format(negative, number, L_SECONDS_ABBR)
-		end
-	else
-		if number == math.huge then
-			return ("%s**%d **:**:**"):format(negative, L_DAY_ONELETTER_ABBR)
-		elseif number >= 60*60*24 then
-			return ("%s%.0f%s %d:%02d:%02d"):format(negative, math.floor(number/86400), L_DAY_ONELETTER_ABBR, number/3600 % 24, number/60 % 60, number % 60)
-		elseif number >= 60*60 then
-			return ("%s%d:%02d:%02d"):format(negative, number/3600, number/60 % 60, number % 60)
-		else
-			return ("%s%d:%02d"):format(negative, number/60 % 60, number % 60)
-		end
-	end
+	return ("%s%d:%02d"):format(negative, number/60 % 60, number % 60)
 end
 ScriptEnv.FormatDuration = FormatDuration
 
--- Depends upon the local t = {} above FormatDuration
-local LARGE_NUMBER_SEPERATOR, DECIMAL_SEPERATOR = LARGE_NUMBER_SEPERATOR, DECIMAL_SEPERATOR
-local function SeparateDigits(number, thousands, decimal)
-	local symbol
-	if type(number) == "string" then
-		local value
-		value, symbol = number:match("^([-%d.]+)(.*)")
-		if not value then
-			return number
-		end
-		number = tonumber(value)
-	end
-	local int = math.abs(math.floor(number))
-	local rest = tostring(number):match("^[-%d.]+%.(%d+)") -- fuck off precision errors
-	if number < 0 then
-		t[#t+1] = "-"
-	end
-	if int < 1000 then
-		t[#t+1] = int
-	else
-		local digits = math.log10(int)
-		local segments = math.floor(digits / 3)
-		t[#t+1] = math.floor(int / 1000^segments)
-		for i = segments-1, 0, -1 do
-			t[#t+1] = thousands or LARGE_NUMBER_SEPERATOR
-			t[#t+1] = ("%03d"):format(math.floor(int / 1000^i) % 1000)
-		end
-	end
-	if rest then
-		t[#t+1] = decimal or DECIMAL_SEPERATOR
-		t[#t+1] = rest
-	end
-	if symbol then
-		t[#t+1] = symbol
-	end
-	local s = table.concat(t)
-	wipe(t)
-	return s
-end
-ScriptEnv.SeparateDigits = SeparateDigits
+ScriptEnv.SeparateDigits = BreakUpLargeNumbers
 
 local function Angle(value)
-	if not value or value == "" then
-		return "", "", ""
+	if not value then
+		return ""
 	end
-	return "<", value, ">"
+	return WrapString(value, "<", ">")
 end
 ScriptEnv.Angle = Angle
 
 local function Paren(value)
-	if not value or value == "" then
-		return "", "", ""
+	if not value then
+		return ""
 	end
-	return "(", value, ")"
+	return WrapString(value, "(", ")")
 end
 ScriptEnv.Paren = Paren
+
+local function Minus(value)
+	return WrapString(TruncateWhenZero(value), "-")
+end
+ScriptEnv.Minus = Minus
 
 local function UpdateIn(seconds)
 	local font_string = ScriptEnv.font_string
@@ -363,6 +235,22 @@ local function IsPlayer(unit)
 	return UnitIsPlayer(unit) or UnitInPartyIsAI(unit)
 end
 ScriptEnv.UnitIsPlayer = IsPlayer -- existing LuaText compat
+
+local function WrapTextInColor(text, r, g, b)
+	local success, result = pcall(TruncateWhenZero, text)
+	if not success then
+		result = text
+	end
+	return WrapString(result, ("|cff%02x%02x%02x"):format(r, g, b), "|r")
+end
+
+local function WrapTextInColorCode(text, textColorCode)
+	local success, result = pcall(TruncateWhenZero, text)
+	if not success then
+		result = text
+	end
+	return WrapString(result, "|cff"..textColorCode, "|r")
+end
 
 local HOSTILE_REACTION = 2
 local NEUTRAL_REACTION = 4
@@ -669,7 +557,7 @@ local function DruidForm(unit)
 			repeat
 				local auraData = C_UnitAuras.GetAuraDataByIndex(unit, i, "HELPFUL")
 				local name = auraData and auraData.name
-				if name then
+				if name and not issecretvalue(name) then
 					if name == MOONKIN_FORM then
 						return L["Moonkin"]
 					elseif name == TRAVEL_FORM then
@@ -679,7 +567,7 @@ local function DruidForm(unit)
 					end
 				end
 				i = i + 1
-			until not name
+			until not auraData
 		end
 	end
 end
@@ -695,47 +583,45 @@ local function HP(unit, no_fast)
 	if not no_fast then
 		hp_cache[ScriptEnv.font_string] = true
 	end
-	if hp == 1 and UnitIsGhost(unit) then
-		return 0
-	end
+	-- if hp == 1 and UnitIsGhost(unit) then
+	-- 	return 0
+	-- end
 	return hp
 end
 ScriptEnv.HP = HP
 
--- Just use the Blizzard API no change needed
--- only reason this is here is for symmetry,
--- it feels weird to have HP (which we need
--- to avoid the hp = 1 while dead crap), but
--- not have MaxHP
 local MaxHP = UnitHealthMax
 ScriptEnv.MaxHP = MaxHP
 
-local function Power(unit, power_type)
-	local power = UnitPower(unit, power_type)
+local MissingHP = UnitHealthMissing
+ScriptEnv.MissingHP = MissingHP
 
-	-- Detect mana texts for player and pet units, cache the power
-	-- and mark the font_strings for faster updating.  Allows
-	-- smoothing updating of PowerBars.
-	local guid = UnitGUID(unit)
-	if power_type == nil or UnitPowerType(unit) == power_type then
-		if guid == ScriptEnv.player_guid then
-			ScriptEnv.player_power = power
-		  power_cache[ScriptEnv.font_string] = true
-		elseif guid == UnitGUID("pet") then
-			ScriptEnv.pet_power = power
-			power_cache[ScriptEnv.font_string] = true
-		end
-	end
-
-	return power
+local function PercentHP(unit)
+	local hpp = UnitHealthPercent(unit, true, CurveConstants.ScaleTo100)
+	return FloorToNearestString(hpp)
 end
+ScriptEnv.PercentHP = PercentHP
+
+local Power = UnitPower
 ScriptEnv.Power = Power
 
--- More symmetry
 local MaxPower = UnitPowerMax
 ScriptEnv.MaxPower = MaxPower
 
+local MissingPower = UnitPowerMissing
+ScriptEnv.MissingPower = MissingPower
+
+local function PercentPower(unit, powerType, unmodified)
+	local pp = UnitPowerPercent(unit, powerType, unmodified, CurveConstants.ScaleTo100)
+	return FloorToNearestString(pp)
+end
+ScriptEnv.PercentPower = PercentPower
+
 local function Round(number, digits)
+	if issecretvalue(number) then
+		return string.format("%." .. digits .. "f", number)
+	end
+
 	local mantissa = 10^(digits or 0)
 	local norm = number * mantissa + 0.5
 	local norm_floor = math.floor(norm)
@@ -747,227 +633,97 @@ end
 ScriptEnv.Round = Round
 
 local Short, Shorter, VeryShort
-local locale = GetLocale()
-if locale == "zhCN" or locale == "zhTW" or locale == "koKR" then
-	local FIRST_NUMBER_CAP_NO_SPACE = FIRST_NUMBER_CAP_NO_SPACE
-	local SECOND_NUMBER_CAP_NO_SPACE = SECOND_NUMBER_CAP_NO_SPACE
+do
+	local short_opts, shorter_opts, very_short_opts
+	local locale = GetLocale()
+	if locale == "zhCN" or locale == "zhTW" or locale == "koKR" then
+		short_opts = {
+			config = CreateAbbreviateConfig({
+				{ breakpoint = 100000000000, abbreviation = "SECOND_NUMBER_CAP_NO_SPACE", significandDivisor = 100000000, fractionDivisor = 1   },
+				{ breakpoint = 10000000000,  abbreviation = "SECOND_NUMBER_CAP_NO_SPACE", significandDivisor = 10000000,  fractionDivisor = 10  },
+				{ breakpoint = 100000000,    abbreviation = "SECOND_NUMBER_CAP_NO_SPACE", significandDivisor = 1000000,   fractionDivisor = 100 },
+				{ breakpoint = 10000000,     abbreviation = "FIRST_NUMBER_CAP_NO_SPACE",  significandDivisor = 10000,     fractionDivisor = 1   },
+				{ breakpoint = 1000000,      abbreviation = "FIRST_NUMBER_CAP_NO_SPACE",  significandDivisor = 1000,      fractionDivisor = 10  },
+				{ breakpoint = 10000,        abbreviation = "FIRST_NUMBER_CAP_NO_SPACE",  significandDivisor = 100,       fractionDivisor = 100 },
+			})
+		}
 
-	function Short(value, format)
-		if type(value) == "number" then
-			local v = math.abs(value)
-			local fmt
-			if v >= 100000000000 then
-				fmt = "%.0f" .. SECOND_NUMBER_CAP_NO_SPACE
-				value = value / 100000000
-			elseif v >= 10000000000 then
-				fmt = "%.1f" .. SECOND_NUMBER_CAP_NO_SPACE
-				value = value / 100000000
-			elseif v >= 100000000 then
-				fmt = "%.2f" .. SECOND_NUMBER_CAP_NO_SPACE
-				value = value / 100000000
-			elseif v >= 10000000 then
-				fmt = "%.0f" .. FIRST_NUMBER_CAP_NO_SPACE
-				value = value / 10000
-			elseif v >= 1000000 then
-				fmt = "%.1f" .. FIRST_NUMBER_CAP_NO_SPACE
-				value = value / 10000
-			elseif v >= 10000 then
-				fmt = "%.2f" .. FIRST_NUMBER_CAP_NO_SPACE
-				value = value / 10000
-			else
-				fmt = "%.0f"
-			end
-			if format then
-				return fmt:format(value)
-			end
-			return fmt, value
-		end
-		local a, b = value:match("^(%d+)/(%d+)")
-		if a then
-			local fmt_a, fmt_b
-			fmt_b, b = Short(tonumber(b))
-			fmt_a, a = Short(tonumber(a))
-			local fmt = ("%s/%s"):format(fmt_a, fmt_b)
-			if format then
-				return fmt:format(a, b)
-			end
-			return fmt, a, b
-		end
-		return value
-	end
+		shorter_opts = {
+			config = CreateAbbreviateConfig({
+				{ breakpoint = 100000000000, abbreviation = "SECOND_NUMBER_CAP_NO_SPACE", significandDivisor = 100000000, fractionDivisor = 1   },
+				{ breakpoint = 10000000000,  abbreviation = "SECOND_NUMBER_CAP_NO_SPACE", significandDivisor = 10000000,  fractionDivisor = 10  },
+				{ breakpoint = 100000000,    abbreviation = "SECOND_NUMBER_CAP_NO_SPACE", significandDivisor = 1000000,   fractionDivisor = 100 },
+				{ breakpoint = 10000000,     abbreviation = "FIRST_NUMBER_CAP_NO_SPACE",  significandDivisor = 10000,     fractionDivisor = 1   },
+				{ breakpoint = 1000000,      abbreviation = "FIRST_NUMBER_CAP_NO_SPACE",  significandDivisor = 1000,      fractionDivisor = 10  },
+				{ breakpoint = 10000,        abbreviation = "FIRST_NUMBER_CAP_NO_SPACE",  significandDivisor = 100,       fractionDivisor = 100 },
+				{ breakpoint = 1000,         abbreviation = "FIRST_NUMBER_CAP_NO_SPACE",  significandDivisor = 100,       fractionDivisor = 10  },
+			})
+		}
 
-	function Shorter(value, format)
-		if type(value) == "number" then
-			local v = math.abs(value)
-			if v < 10000 and v >= 1000 then
-				local fmt = "%.1f" .. FIRST_NUMBER_CAP_NO_SPACE
-				if format then
-					return fmt:format(value)
-				end
-				return fmt, value
-			end
-		else
-			local a, b = value:match("^(%d+)/(%d+)")
-			if a then
-				local fmt_a, fmt_b
-				fmt_b, b = Shorter(tonumber(b))
-				fmt_a, a = Shorter(tonumber(a))
-				local fmt = ("%s/%s"):format(fmt_a, fmt_b)
-				if format then
-					return fmt:format(a, b)
-				end
-				return fmt, a, b
-			end
+		very_short_opts = {
+			config = CreateAbbreviateConfig({
+				{ breakpoint = 100000000, abbreviation = "SECOND_NUMBER_CAP_NO_SPACE", significandDivisor = 100000000, fractionDivisor = 1 },
+				{ breakpoint = 10000,     abbreviation = "FIRST_NUMBER_CAP_NO_SPACE",  significandDivisor = 10000,     fractionDivisor = 1 },
+			})
+		}
+	else
+		local BILLION_NUMBER = 10^9
+		-- Use the correct symbol for long scale number locales
+		if locale == "frFR" or locale == "esMX" or locale == "esES" then
+			BILLION_NUMBER = 10^12
 		end
-		return Short(value, format)
+
+		short_opts = {
+			config = CreateAbbreviateConfig({
+				{ breakpoint = BILLION_NUMBER, abbreviation = "b", significandDivisor = BILLION_NUMBER/10, fractionDivisor = 10,  abbreviationIsGlobal = false},
+				{ breakpoint = 1000000000,     abbreviation = "m", significandDivisor = 10000000, fractionDivisor = 1,   abbreviationIsGlobal = false },
+				{ breakpoint = 10000000,       abbreviation = "m", significandDivisor = 100000,   fractionDivisor = 10,  abbreviationIsGlobal = false },
+				{ breakpoint = 1000000,        abbreviation = "m", significandDivisor = 10000,    fractionDivisor = 100, abbreviationIsGlobal = false },
+				{ breakpoint = 100000,         abbreviation = "k", significandDivisor = 1000,     fractionDivisor = 1,   abbreviationIsGlobal = false },
+				{ breakpoint = 10000,          abbreviation = "k", significandDivisor = 100,      fractionDivisor = 10,  abbreviationIsGlobal = false },
+			})
+		}
+
+		shorter_opts = {
+			config = CreateAbbreviateConfig({
+				{ breakpoint = BILLION_NUMBER, abbreviation = "b", significandDivisor = BILLION_NUMBER/10, fractionDivisor = 10,  abbreviationIsGlobal = false},
+				{ breakpoint = 1000000000,     abbreviation = "m", significandDivisor = 10000000, fractionDivisor = 1,   abbreviationIsGlobal = false },
+				{ breakpoint = 10000000,       abbreviation = "m", significandDivisor = 100000,   fractionDivisor = 10,  abbreviationIsGlobal = false },
+				{ breakpoint = 1000000,        abbreviation = "m", significandDivisor = 10000,    fractionDivisor = 100, abbreviationIsGlobal = false },
+				{ breakpoint = 100000,         abbreviation = "k", significandDivisor = 1000,     fractionDivisor = 1,   abbreviationIsGlobal = false },
+				{ breakpoint = 10000,          abbreviation = "k", significandDivisor = 100,      fractionDivisor = 10,  abbreviationIsGlobal = false },
+				{ breakpoint = 1000,           abbreviation = "k", significandDivisor = 100,      fractionDivisor = 10,  abbreviationIsGlobal = false },
+			})
+		}
+
+		very_short_opts = {
+			config = CreateAbbreviateConfig({
+				{ breakpoint = BILLION_NUMBER, abbreviation = "b", significandDivisor = BILLION_NUMBER, fractionDivisor = 1, abbreviationIsGlobal = false },
+				{ breakpoint = 1000000,        abbreviation = "m", significandDivisor = 1000000,        fractionDivisor = 1, abbreviationIsGlobal = false },
+				{ breakpoint = 1000,           abbreviation = "k", significandDivisor = 1000,           fractionDivisor = 1, abbreviationIsGlobal = false },
+			})
+		}
 	end
 
-	function VeryShort(value, format)
-		if type(value) == "number" then
-			local v = abs(value)
-			local fmt
-			if v >= 100000000 then
-				fmt = "%.0f" .. SECOND_NUMBER_CAP_NO_SPACE
-				value = value / 100000000
-			elseif v >= 10000 then
-				fmt = "%.0f" .. FIRST_NUMBER_CAP_NO_SPACE
-				value = value / 10000
-			else
-				fmt = "%.0f"
-			end
-			if format then
-				return fmt:format(value)
-			end
-			return fmt, value
+	function Short(value)
+		local success, result = pcall(AbbreviateNumbers, value, short_opts)
+		if not success then
+			result = ""
 		end
-		local a, b = value:match("^(%d+)/(%d+)")
-		if a then
-			local fmt_a, fmt_b
-			fmt_b, b = VeryShort(tonumber(b))
-			fmt_a, a = VeryShort(tonumber(a))
-			local fmt = ("%s/%s"):format(fmt_a, fmt_b)
-			if format then
-				return fmt:format(a, b)
-			end
-			return fmt, a, b
-		end
-		return value
+		return result
 	end
-else
-	local BILLION_NUMBER = 10^9
-	-- Use the correct symbol for long scale number locales
-	if locale == "frFR" or locale == "esMX" or locale == "esES" then
-		BILLION_NUMBER = 10^12
-	end
+	ScriptEnv.Short = Short
 
-	function Short(value, format)
-		if type(value) == "number" then
-			local v = abs(value)
-			local fmt
-			if v >= BILLION_NUMBER then
-				fmt = "%.1fb"
-				value = value / BILLION_NUMBER
-			elseif v >= 1000000000 then
-				fmt = "%.0fm"
-				value = value / 1000000
-			elseif v >= 10000000 then
-				fmt = "%.1fm"
-				value = value / 1000000
-			elseif v >= 1000000 then
-				fmt = "%.2fm"
-				value = value / 1000000
-			elseif v >= 100000 then
-				fmt = "%.0fk"
-				value = value / 1000
-			elseif v >= 10000 then
-				fmt = "%.1fk"
-				value = value / 1000
-			else
-				fmt = "%.0f"
-			end
-			if format then
-				return fmt:format(value)
-			end
-			return fmt, value
-		end
-		local a, b = value:match("^(%d+)/(%d+)")
-		if a then
-			local fmt_a, fmt_b
-			fmt_b, b = Short(tonumber(b))
-			fmt_a, a = Short(tonumber(a))
-			local fmt = ("%s/%s"):format(fmt_a, fmt_b)
-			if format then
-				return fmt:format(a, b)
-			end
-			return fmt, a, b
-		end
-		return value
+	function Shorter(value)
+		return AbbreviateNumbers(value, shorter_opts)
 	end
+	ScriptEnv.Shorter = Shorter
 
-	function Shorter(value, format)
-		if type(value) == "number" then
-			local v = math.abs(value)
-			if v < 10000 and v >= 1000 then
-				local fmt = "%.1fk"
-				if format then
-					return fmt:format(value)
-				end
-				return fmt, value
-			end
-		else
-			local a, b = value:match("^(%d+)/(%d+)")
-			if a then
-				local fmt_a, fmt_b
-				fmt_b, b = Shorter(tonumber(b))
-				fmt_a, a = Shorter(tonumber(a))
-				local fmt = ("%s/%s"):format(fmt_a, fmt_b)
-				if format then
-					return fmt:format(a, b)
-				end
-				return fmt, a, b
-			end
-		end
-		return Short(value, format)
+	function VeryShort(value)
+		return AbbreviateNumbers(value, very_short_opts)
 	end
-
-	function VeryShort(value, format)
-		if type(value) == "number" then
-			local v = abs(value)
-			local fmt
-			if v >= BILLION_NUMBER then
-				fmt = "%.0fb"
-				value = value / BILLION_NUMBER
-			elseif v >= 1000000 then
-				fmt = "%.0fm"
-				value = value / 1000000
-			elseif v >= 1000 then
-				fmt = "%.0fk"
-				value = value / 1000
-			else
-				fmt = "%.0f"
-			end
-			if format then
-				return fmt:format(value)
-			end
-			return fmt, value
-		end
-		local a, b = value:match("^(%d+)/(%d+)")
-		if a then
-			local fmt_a, fmt_b
-			fmt_b, b = VeryShort(tonumber(b))
-			fmt_a, a = VeryShort(tonumber(a))
-			local fmt = ("%s/%s"):format(fmt_a, fmt_b)
-			if format then
-				return fmt:format(a, b)
-			end
-			return fmt, a, b
-		end
-		return value
-	end
+	ScriptEnv.VeryShort = VeryShort
 end
-ScriptEnv.Short = Short
-ScriptEnv.Shorter = Shorter
-ScriptEnv.VeryShort = VeryShort
 
 local function IsMouseOver()
 	local font_string = ScriptEnv.font_string
@@ -991,6 +747,9 @@ end
 ScriptEnv.ComboSymbols = ComboSymbols
 
 local function Percent(x, y)
+	if hasanysecretvalues(x, y) then
+		error("Percent cannot be used with secret values.")
+	end
 	if x and y and y ~= 0 then
 		return Round(x / y * 100, 1)
 	end
@@ -1108,16 +867,13 @@ local function ThreatPair(unit)
 		if UnitExists("target") then
 			return unit, "target"
 		end
-	else
-		return "player", unit
+		return nil
 	end
+	return "player", unit
 end
 ScriptEnv.ThreatPair = ThreatPair
 
-local function ThreatSituation(unit, target)
-	return UnitDetailedThreatSituation(unit, target)
-end
-ScriptEnv.ThreatSituation = ThreatSituation
+ScriptEnv.ThreatSituation = UnitDetailedThreatSituation
 
 local function ThreatStatusColor(status)
 	local r, g, b = GetThreatStatusColor(status)
@@ -1127,17 +883,27 @@ ScriptEnv.ThreatStatusColor = ThreatStatusColor
 
 local function CastData(unit)
 	spell_cast_cache[ScriptEnv.font_string] = true
-	return cast_data[UnitGUID(unit)]
+	return cast_data[unit]
 end
 ScriptEnv.CastData = CastData
 
-local function Alpha(number)
-	if number > 1 then
-		number = 1
-	elseif number < 0 then
-		number = 0
+local function InterruptedBy(interrupted_by)
+	if interrupted_by then
+		local name = UnitNameFromGUID(interrupted_by)
+		if name then
+			local _, class = UnitClassFromGUID(interrupted_by)
+			local classColor = RAID_CLASS_COLORS[class]
+			if classColor then
+				name = classColor:WrapTextInColorCode(name)
+			end
+			return _G.SPELL_INTERRUPTED_BY:format(name)
+		end
 	end
-	PitBull4_LuaTexts.alpha = number
+end
+ScriptEnv.InterruptedBy = InterruptedBy
+
+local function Alpha(number)
+	PitBull4_LuaTexts.alpha = Saturate(number)
 end
 ScriptEnv.Alpha = Alpha
 
@@ -1169,7 +935,7 @@ local function abbreviate(text)
 	end
 end
 local function Abbreviate(value)
-	if value:find(" ") then
+	if not issecretvalue(value) and value:find(" ") then
 		return value:gsub(" *([^ ]+) *", abbreviate)
 	end
 	return value
@@ -1177,47 +943,20 @@ end
 ScriptEnv.Abbreviate = Abbreviate
 
 local function PVPDuration(unit)
-	if unit and not UnitIsUnit(unit,"player") then return end
-  if IsPVPTimerRunning() then
+	if unit == "player" and IsPVPTimerRunning() then
 		UpdateIn(0.25)
 		return GetPVPTimer() / 1000
 	end
 end
 ScriptEnv.PVPDuration = PVPDuration
 
-local function HPColor(cur, max)
-	local perc = 0
-	if max ~= 0 then
-		perc = cur / max
-	end
-	local r1, g1, b1
-	local r2, g2, b2
-	if perc <= 0.5 then
-		perc = perc * 2
-		r1, g1, b1 = 1, 0, 0  -- TODO: Let these be configurable?
-		r2, g2, b2 = 1, 1, 0
-	else
-		perc = perc * 2 - 1
-		r1, g1, b1 = 1, 1, 0
-		r2, g2, b2 = 0, 1, 0
-	end
-	local r, g, b = r1 + (r2 - r1)*perc, g1 + (g2 - g1)*perc, b1 + (b2 - b1)*perc
-	if r < 0 then
-		r = 0
-	elseif r > 1 then
-		r = 1
-	end
-	if g < 0 then
-		g = 0
-	elseif g > 1 then
-		g = 1
-	end
-	if b < 0 then
-		b = 0
-	elseif b > 1 then
-		b = 1
-	end
-	return r * 255, g * 255, b * 255
+local hp_color_curve = C_CurveUtil.CreateColorCurve()
+hp_color_curve:AddPoint(0, CreateColor(1, 0, 0))
+hp_color_curve:AddPoint(0.5, CreateColor(1, 1, 0))
+hp_color_curve:AddPoint(1, CreateColor(0, 1, 0))
+local function HPColor(value)
+	local color = hp_color_curve:Evaluate(value)
+	return color:GetRGBAsBytes()
 end
 ScriptEnv.HPColor = HPColor
 
@@ -1252,7 +991,7 @@ end
 ScriptEnv.PowerColor = PowerColor
 
 local function ReputationColor(reaction)
-  local color = PitBull4.ReactionColors[reaction]
+	local color = PitBull4.ReactionColors[reaction]
 	if color then
 		return color[1] * 255, color[2] * 255, color[3] * 255
 	end
