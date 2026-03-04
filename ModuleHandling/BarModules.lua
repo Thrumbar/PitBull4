@@ -215,9 +215,9 @@ local function call_background_color_function(self, frame, bar_db, value, extra,
 	local r, g, b, a, override
 	if frame.guid then
 		if bar_provider then
-			r, g, b, a, override = self:GetBackgroundColor(frame, value, extra, icon)
-		else
 			r, g, b, a, override = self:GetBackgroundColor(frame, bar_db, value, extra, icon)
+		else
+			r, g, b, a, override = self:GetBackgroundColor(frame, value, extra, icon)
 		end
 	end
 	if not override and custom_background then

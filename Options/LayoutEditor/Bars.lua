@@ -246,7 +246,7 @@ function PitBull4.Options.get_layout_editor_bar_options()
 			local side = db.side
 			local t = {}
 			local sort = {}
-			for other_id, other_module in PitBull4:IterateModulesOfType("bar", "indicator") do
+			for other_id, other_module in PitBull4:IterateModulesOfType("bar", "secret_bar", "indicator") do
 				local other_db = GetLayoutDB(other_id)
 				if side == other_db.side and other_db.enabled then
 					local position = other_db.position
@@ -297,7 +297,7 @@ function PitBull4.Options.get_layout_editor_bar_options()
 
 			local old_position = db.position
 
-			for other_id, other_module in PitBull4:IterateModulesOfType("bar", "indicator", true) do
+			for other_id, other_module in PitBull4:IterateModulesOfType("bar", "secret_bar", "indicator", true) do
 				local other_db = GetLayoutDB(other_id)
 				if other_db.side then
 					id_to_position[other_id] = other_db.position
@@ -424,6 +424,12 @@ function PitBull4.Options.get_layout_editor_bar_options()
 
 			UpdateFrames()
 		end,
+		hidden = function(info)
+			local size = #info
+			local module_index = size == 5 and size - 2 or size - 1
+			local module = PitBull4.modules[info[module_index]]
+			return module.module_type == "secret_bar"
+		end,
 		disabled = disabled,
 	}
 
@@ -529,7 +535,7 @@ function PitBull4.Options.get_layout_editor_bar_options()
 			local size = #info
 			local module_index = size == 5 and size - 2 or size - 1
 			local module = PitBull4.modules[info[module_index]]
-			return not module.allow_animations
+			return module.module_type == "secret_bar" or not module.allow_animations
 		end,
 		disabled = disabled,
 	}
@@ -553,7 +559,7 @@ function PitBull4.Options.get_layout_editor_bar_options()
 			local module_index = size == 5 and size - 2 or size - 1
 			local module = PitBull4.modules[info[module_index]]
 			local db = get_current_layout_db(info)
-			return not module.allow_animations or not(db.fade or db.animated)
+			return module.module_type == "secret_bar" or not module.allow_animations or not(db.fade or db.animated)
 		end,
 		min = 0.1,
 		max = 1,
@@ -752,7 +758,7 @@ function PitBull4.Options.get_layout_editor_bar_options()
 			end,
 		}
 	end
-	for id, module in PitBull4:IterateModulesOfType("bar", true) do
+	for id, module in PitBull4:IterateModulesOfType("bar", "secret_bar", true) do
 		PitBull4.Options.layout_editor_bar_handle_module_load(module)
 	end
 

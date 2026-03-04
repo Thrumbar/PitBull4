@@ -8,7 +8,7 @@ local L = PitBull4.L
 
 local PitBull4_AltManaBar = PitBull4:NewModule("DruidManaBar")
 
-PitBull4_AltManaBar:SetModuleType("bar")
+PitBull4_AltManaBar:SetModuleType("secret_bar")
 PitBull4_AltManaBar:SetName(L["Alternate mana bar"])
 PitBull4_AltManaBar:SetDescription(L["Show the mana bar for specs that don't use mana as their primary resource."])
 PitBull4_AltManaBar.allow_animations = true
@@ -60,10 +60,11 @@ function PitBull4_AltManaBar:GetValue(frame)
 		return nil
 	end
 
-	local percent = UnitPower("player", SPELL_POWER_MANA) / max
-	if percent == 1 and self:GetLayoutDB(frame).hide_if_full then
-		return nil
-	end
+	local percent = UnitPowerPercent("player", SPELL_POWER_MANA)
+	-- local percent = UnitPower("player", SPELL_POWER_MANA) / max
+	-- if percent == 1 and self:GetLayoutDB(frame).hide_if_full then
+	-- 	return nil
+	-- end
 
 	return percent
 end
@@ -74,7 +75,7 @@ end
 PitBull4_AltManaBar.GetExampleColor = PitBull4_AltManaBar.GetColor
 
 function PitBull4_AltManaBar:UNIT_POWER_FREQUENT(event, unit, power_type)
-	if unit ~= "player" or ((event == "UNIT_POWER_FREQUENT" or event == "UNIT_MAXPOWER") and power_type ~= "MANA") then
+	if (event == "UNIT_POWER_FREQUENT" or event == "UNIT_MAXPOWER") and power_type ~= "MANA" then
 		return
 	end
 

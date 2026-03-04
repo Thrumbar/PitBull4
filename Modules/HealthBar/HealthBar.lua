@@ -7,7 +7,7 @@ local unpack = _G.unpack
 
 local PitBull4_HealthBar = PitBull4:NewModule("HealthBar")
 
-PitBull4_HealthBar:SetModuleType("bar")
+PitBull4_HealthBar:SetModuleType("secret_bar")
 PitBull4_HealthBar:SetName(L["Health bar"])
 PitBull4_HealthBar:SetDescription(L["Show a bar indicating the unit's health."])
 PitBull4_HealthBar.allow_animations = true
@@ -27,11 +27,35 @@ PitBull4_HealthBar:SetDefaults({
 	}
 })
 
+local hp_color_curve = C_CurveUtil.CreateColorCurve()
+hp_color_curve:SetType(Enum.LuaCurveType.Step)
+
+local hp_bgcolor_curve = C_CurveUtil.CreateColorCurve()
+hp_bgcolor_curve:SetType(Enum.LuaCurveType.Step)
+
 local timerFrame = CreateFrame("Frame")
 timerFrame:Hide()
 
 local units_to_update = {}
 
+local function normal_to_bg_color(color)
+	return (color[1] + 0.2)/3, (color[2] + 0.2)/3, (color[3] + 0.2)/3
+end
+
+local function update_hp_curve(self)
+	local colors = self.db.profile.global.colors
+	hp_color_curve:ClearPoints()
+	hp_color_curve:AddPoint(0.0, CreateColor(unpack(colors.min_health)))
+	hp_color_curve:AddPoint(0.5, CreateColor(unpack(colors.half_health)))
+	hp_color_curve:AddPoint(1.0, CreateColor(unpack(colors.max_health)))
+
+	hp_bgcolor_curve:ClearPoints()
+	hp_bgcolor_curve:AddPoint(0.0, CreateColor(normal_to_bg_color(colors.min_health)))
+	hp_bgcolor_curve:AddPoint(0.5, CreateColor(normal_to_bg_color(colors.half_health)))
+	hp_bgcolor_curve:AddPoint(1.0, CreateColor(normal_to_bg_color(colors.max_health)))
+
+	self:UpdateAll()
+end
 
 function PitBull4_HealthBar:OnEnable()
 	timerFrame:Show()
@@ -41,7 +65,7 @@ function PitBull4_HealthBar:OnEnable()
 	self:RegisterEvent("UNIT_CONNECTION", "UNIT_HEALTH")
 	self:RegisterEvent("PLAYER_ALIVE")
 
-	self:UpdateAll()
+	update_hp_curve(self)
 end
 
 function PitBull4_HealthBar:OnDisable()
@@ -60,59 +84,42 @@ timerFrame:SetScript("OnUpdate", function()
 end)
 
 function PitBull4_HealthBar:GetValue(frame)
-	local unit = frame.unit
-	local max = UnitHealthMax(unit)
-	if max == 0 then
-		return 0
-	end
-	local hp = UnitHealth(unit)
-	if hp == 1 and UnitIsGhost(unit) then
-		return 0
-	end
-	return hp / max
+	return UnitHealthPercent(frame.unit, true)
 end
 
 function PitBull4_HealthBar:GetExampleValue(frame)
 	return EXAMPLE_VALUE
 end
 
-function PitBull4_HealthBar:GetColor(frame, value)
+function PitBull4_HealthBar:GetColor(frame)
+	local color
+
 	local unit = frame.unit
-
 	if not unit or not UnitIsConnected(unit) then
-		local color = self.db.profile.global.colors.disconnected
-		return color[1], color[2], color[3], nil, true
+		color = self.db.profile.global.colors.disconnected
 	elseif UnitIsDeadOrGhost(unit) then
-		local color = self.db.profile.global.colors.dead
-		return color[1], color[2], color[3], nil, true
+		color = self.db.profile.global.colors.dead
 	elseif UnitIsTapDenied(unit) then
-		local color = self.db.profile.global.colors.tapped
+		color = self.db.profile.global.colors.tapped
+	end
+	if color then
 		return color[1], color[2], color[3], nil, true
 	end
 
-	local high_r, high_g, high_b
-	local low_r, low_g, low_b
-	local colors = self.db.profile.global.colors
-	local normalized_value
-	if value < 0.5 then
-		high_r, high_g, high_b = unpack(colors.half_health)
-		low_r, low_g, low_b = unpack(colors.min_health)
-		normalized_value = value * 2
-	else
-		high_r, high_g, high_b = unpack(colors.max_health)
-		low_r, low_g, low_b = unpack(colors.half_health)
-		normalized_value = value * 2 - 1
+	color = UnitHealthPercent(unit, true, hp_color_curve)
+	if color then
+		return color:GetRGB()
 	end
-
-	local inverse_value = 1 - normalized_value
-
-	return
-		low_r * inverse_value + high_r * normalized_value,
-		low_g * inverse_value + high_g * normalized_value,
-		low_b * inverse_value + high_b * normalized_value
 end
 function PitBull4_HealthBar:GetExampleColor(frame, value)
 	return unpack(self.db.profile.global.colors.disconnected)
+end
+
+function PitBull4_HealthBar:GetSecretBackgroundColor(frame)
+	local color = UnitHealthPercent(frame.unit, true, hp_bgcolor_curve)
+	if color then
+		return color:GetRGB()
+	end
 end
 
 function PitBull4_HealthBar:UNIT_HEALTH(_, unit)
@@ -130,6 +137,10 @@ PitBull4_HealthBar:SetColorOptionsFunction(function(self)
 	local function set(info, r, g, b)
 		local color = self.db.profile.global.colors[info[#info]]
 		color[1], color[2], color[3] = r, g, b
+	end
+	local function set_curve(info, r, g, b)
+		set(info, r, g, b)
+		update_hp_curve(self)
 	end
 	return 'dead', {
 		type = 'color',
@@ -153,19 +164,19 @@ PitBull4_HealthBar:SetColorOptionsFunction(function(self)
 		type = 'color',
 		name = L["Full health"],
 		get = get,
-		set = set,
+		set = set_curve,
 	},
 	'half_health', {
 		type = 'color',
 		name = L["Half health"],
 		get = get,
-		set = set,
+		set = set_curve,
 	},
 	'min_health', {
 		type = 'color',
 		name = L["Empty health"],
 		get = get,
-		set = set,
+		set = set_curve,
 	},
 	function(info)
 		local color = self.db.profile.global.colors.dead
@@ -185,5 +196,7 @@ PitBull4_HealthBar:SetColorOptionsFunction(function(self)
 
 		color = self.db.profile.global.colors.min_health
 		color[1], color[2], color[3] = 1, 0, 0
+
+		update_hp_curve(self)
 	end
 end)

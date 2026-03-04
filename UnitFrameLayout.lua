@@ -208,6 +208,12 @@ local function get_all_bars(frame)
 		end
 	end
 
+	for id, module in PitBull4:IterateModulesOfType('secret_bar') do
+		if frame[id] then
+			bars[#bars+1] = id
+		end
+	end
+
 	for id, module in PitBull4:IterateModulesOfType('indicator') do
 		if frame[id] and module:GetLayoutDB(layout).side then
 			bars[#bars+1] = id

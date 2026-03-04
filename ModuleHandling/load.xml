@@ -4,6 +4,7 @@
 <Script file="Module.lua"/>
 
 <Script file="BarModules.lua"/>
+<Script file="SecretBarModule.lua"/>
 <Script file="CustomModule.lua"/>
 <Script file="CustomTextModule.lua"/>
 <Script file="FaderModule.lua"/>

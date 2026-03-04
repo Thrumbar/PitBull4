@@ -7,7 +7,7 @@ local PowerBarColor = _G.PowerBarColor
 
 local PitBull4_PowerBar = PitBull4:NewModule("PowerBar")
 
-PitBull4_PowerBar:SetModuleType("bar")
+PitBull4_PowerBar:SetModuleType("secret_bar")
 PitBull4_PowerBar:SetName(L["Power bar"])
 PitBull4_PowerBar:SetDescription(L["Show a bar for your primary resource."])
 PitBull4_PowerBar.allow_animations = true
@@ -62,19 +62,17 @@ end)
 function PitBull4_PowerBar:GetValue(frame)
 	local unit = frame.unit
 	local layout_db = self:GetLayoutDB(frame)
-	local max = UnitPowerMax(unit)
 
 	if layout_db.hide_no_mana and UnitPowerType(unit) ~= 0 then
 		return nil
-	elseif layout_db.hide_no_power and max <= 0 then
-		return nil
+	else
+		local max = UnitPowerMax(unit)
+		if layout_db.hide_no_power and not issecretvalue(max) and max <= 0 then
+			return nil
+		end
 	end
 
-	if max == 0 then
-		return 0
-	end
-
-	return UnitPower(unit) / max
+	return UnitPowerPercent(unit)
 end
 
 function PitBull4_PowerBar:GetExampleValue(frame)
@@ -94,11 +92,20 @@ function PitBull4_PowerBar:GetColor(frame, value)
 	else
 		r, g, b = color[1], color[2], color[3]
 	end
-
-	return r, g, b, nil, nil, self:GetLayoutDB(frame).use_atlas and power_bar_atlas[power_token]
+	return r, g, b
 end
 function PitBull4_PowerBar:GetExampleColor(frame)
 	return unpack(PitBull4.PowerColors.MANA)
+end
+
+function PitBull4_PowerBar:GetTexture(frame)
+	if not self:GetLayoutDB(frame).use_atlas then return end
+
+	local _, power_token = UnitPowerType(frame.unit)
+	local atlas = power_bar_atlas[power_token]
+	if atlas then
+		return atlas, true
+	end
 end
 
 function PitBull4_PowerBar:UNIT_POWER_FREQUENT(_, unit, power_type)

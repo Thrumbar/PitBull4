@@ -427,7 +427,7 @@ function PitBull4.Options.get_layout_editor_text_options()
 
 			t["root"] = L["Unit frame"]
 
-			for id, module in PitBull4:IterateModulesOfType("bar", "indicator") do
+			for id, module in PitBull4:IterateModulesOfType("bar", "secret_bar", "indicator") do
 				local db = GetLayoutDB(module)
 				if db.enabled and db.side then
 					t[id] = module.name

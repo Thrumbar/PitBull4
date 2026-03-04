@@ -2,17 +2,33 @@
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
 
+local ALTERNATE_POWER_INDEX = _G.ALTERNATE_POWER_INDEX -- 10
 local EXAMPLE_VALUE = 0.6
 
 local PitBull4_AltPowerBar = PitBull4:NewModule("AltPowerBar")
 
-PitBull4_AltPowerBar:SetModuleType("bar")
+PitBull4_AltPowerBar:SetModuleType("secret_bar")
 PitBull4_AltPowerBar:SetName(L["Alternate power bar"])
 PitBull4_AltPowerBar:SetDescription(L["Show a bar for the alternate power bar as used in some quests and boss encounters."])
 PitBull4_AltPowerBar.allow_animations = true
 PitBull4_AltPowerBar:SetDefaults({
 	position = 3,
 })
+
+local get_curve do
+	local pool = {}
+	function get_curve(unit, min, max)
+		local curve = pool[unit]
+		if not pool[unit] then
+			curve = C_CurveUtil.CreateCurve()
+			curve:SetType(Enum.LuaCurveType.Linear)
+			pool[unit] = curve
+		end
+		curve:AddPoint(0, min or 0)
+		curve:AddPoint(1, max)
+		return curve
+	end
+end
 
 function PitBull4_AltPowerBar:OnEnable()
 	self:RegisterEvent("UNIT_POWER_BAR_SHOW")
@@ -42,16 +58,7 @@ function PitBull4_AltPowerBar:GetValue(frame)
 		return 0
 	end
 
-	local min_power = bar_info.minPower
-	local current_power = UnitPower(unit, ALTERNATE_POWER_INDEX)
-	if min_power > current_power then
-		current_power = min_power
-	end
-	if max_power < current_power then
-		current_power = max_power
-	end
-
-	return (current_power - min_power) / (max_power - min_power)
+	return UnitPowerPercent(unit, ALTERNATE_POWER_INDEX, false, get_curve(unit, bar_info.minPower, max_power))
 end
 
 function PitBull4_AltPowerBar:GetExampleValue(frame)

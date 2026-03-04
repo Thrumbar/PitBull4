@@ -12,6 +12,7 @@ local frames_to_anchor = PitBull4.frames_to_anchor
 
 local MODULE_UPDATE_ORDER = {
 	"bar",
+	"secret_bar",
 	"bar_provider",
 	"indicator",
 	"text_provider",
