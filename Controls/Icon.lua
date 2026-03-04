@@ -9,6 +9,14 @@ function Icon:SetTexCoord(...)
 	self.texture:SetTexCoord(...)
 end
 
+function Icon:SetColorTexture(...)
+	self.texture:SetColorTexture(...)
+end
+
+function Icon:SetSpriteSheetCell(...)
+	self.texture:SetSpriteSheetCell(...)
+end
+
 PitBull4.Controls.MakeNewControlType("Icon", "Button", function(control)
 	-- onCreate
 	control:EnableMouse(false)
