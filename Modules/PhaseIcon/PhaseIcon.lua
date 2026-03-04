@@ -66,9 +66,7 @@ function PitBull4_PhaseIcon:GetExampleTexture(frame)
 end
 
 function PitBull4_PhaseIcon:UNIT_PHASE(_, unit)
-	-- UNIT_PHASE fires for some units at different points than for others.
-	-- So we update by GUID rather than by unit id to increase accuracy
-	self:UpdateForGUID(UnitGUID(unit))
+	self:UpdateForUnitID(unit)
 end
 
 function PitBull4_PhaseIcon:PARTY_MEMBER_ENABLE(_, unit)
@@ -86,7 +84,6 @@ PitBull4_PhaseIcon:SetLayoutOptionsFunction(function(self)
 		end,
 		set = function(info, value)
 			PitBull4.Options.GetLayoutDB(self).click_through = value
-
 			for frame in PitBull4:IterateFrames() do
 				self:Clear(frame)
 				self:Update(frame)

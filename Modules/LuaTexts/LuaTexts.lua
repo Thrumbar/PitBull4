@@ -37,8 +37,9 @@ local dnd = {}
 PitBull4_LuaTexts.dnd = dnd
 local dead_times = {}
 PitBull4_LuaTexts.dead_times = dead_times
-local player_guid
-local predicted_power = true
+local group_members = {}
+PitBull4_LuaTexts.group_members = group_members
+local player_guid = UnitGUID("player")
 local predicted_health = true
 
 local PROVIDED_CODES = {
@@ -804,7 +805,6 @@ PitBull4_LuaTexts.timerframe = timerframe
 timerframe:Hide()
 
 function PitBull4_LuaTexts:SetCVar()
-	predicted_power = GetCVarBool("predictedPower")
 	predicted_health = GetCVarBool("predictedHealth")
 end
 
@@ -825,10 +825,6 @@ function PitBull4_LuaTexts:OnEnable()
 	-- Hooks to trap OnEnter/OnLeave for the frames.
 	self:AddFrameScriptHook("OnEnter")
 	self:AddFrameScriptHook("OnLeave")
-
-	-- Cache the player's guid for later use
-	player_guid = UnitGUID("player")
-	PitBull4.LuaTexts.ScriptEnv.player_guid = player_guid
 
 	self:SecureHook("SetCVar")
 	self:SetCVar()
@@ -1095,8 +1091,8 @@ local function update_timers()
 		if not UnitIsConnected(unit) then
 			if not offline_times[guid] then
 				offline_times[guid] = GetTime()
-				for font_string in pairs(offline_cache) do
-					if font_string.frame.guid == guid then
+				for font_string in next, offline_cache do
+					if font_string.frame.unit == unit then
 						to_update[font_string] = 0
 					end
 				end
@@ -1104,8 +1100,8 @@ local function update_timers()
 			afk_times[guid] = nil
 			if dnd[guid] then
 				dnd[guid] = nil
-				for font_string in pairs(dnd_cache) do
-					if font_string.frame.guid == guid then
+				for font_string in next, dnd_cache do
+					if font_string.frame.unit == unit then
 						to_update[font_string] = 0
 					end
 				end
@@ -1115,8 +1111,8 @@ local function update_timers()
 			if UnitIsAFK(unit) then
 				if not afk_times[guid] then
 					afk_times[guid] = GetTime()
-					for font_string in pairs(afk_cache) do
-						if font_string.frame.guid == guid then
+					for font_string in next, afk_cache do
+						if font_string.frame.unit == unit then
 							to_update[font_string] = 0
 						end
 					end
@@ -1136,8 +1132,8 @@ local function update_timers()
 					end
 				end
 				if dnd_change then
-					for font_string in pairs(dnd_cache) do
-						if font_string.frame.guid == guid then
+					for font_string in next, dnd_cache do
+						if font_string.frame.unit == unit then
 							to_update[font_string] = 0
 						end
 					end
@@ -1147,8 +1143,8 @@ local function update_timers()
 		if UnitIsDeadOrGhost(unit) then
 			if not dead_times[guid] then
 				dead_times[guid] = GetTime()
-				for font_string in pairs(dead_cache) do
-					if font_string.frame.guid == guid then
+				for font_string in next, dead_cache do
+					if font_string.frame.unit == unit then
 						to_update[font_string] = 0
 					end
 				end
@@ -1215,7 +1211,7 @@ function PitBull4_LuaTexts:OnEvent(event, unit, ...)
 	local event_entry = event_cache[event]
 	if not event_entry then return end
 	local event_config = self.db.profile.global.events[event]
-	local all, by_unit, player, pet, guid
+	local all, by_unit, player, pet
 
 	if event_config then
 		all, by_unit = event_config.all, event_config.unit
@@ -1223,10 +1219,6 @@ function PitBull4_LuaTexts:OnEvent(event, unit, ...)
 	else
 		-- Sucks but if for some reason the event entry is missing update all
 		all = true
-	end
-
-	if by_unit and unit then
-		guid = UnitGUID(unit)
 	end
 
 	if event == "PLAYER_FLAGS_CHANGED" then
@@ -1237,9 +1229,9 @@ function PitBull4_LuaTexts:OnEvent(event, unit, ...)
 	end
 
 	for font_string in pairs(event_entry) do
-		local fs_guid = font_string.frame.guid
-		if all or (by_unit and fs_guid == guid) or (player and fs_guid == player_guid) or (pet and fs_guid == UnitGUID("pet")) then
-			update_text(font_string,event)
+		local fs_unit = font_string.frame.unit
+		if all or font_string.frame.is_wacky or (unit and (by_unit and fs_unit == unit) or (player and unit == "player") or (pet and (fs_unit == "pet" or fs_unit == "vehicle"))) then
+			update_text(font_string, event)
 		end
 	end
 end
@@ -1265,25 +1257,6 @@ end
 -- Timed updates
 local timer = 0
 timerframe:SetScript("OnUpdate", function(self, elapsed)
-	local ScriptEnv = PitBull4_LuaTexts.ScriptEnv
-	-- Fast updates for powerbars for player and pet frames
-	if predicted_power and next(power_cache) then
-		if UnitPower("player") ~= ScriptEnv.player_power then
-			for font_string in pairs(power_cache) do
-				if font_string.frame.guid == player_guid then
-					to_update[font_string] = 0
-				end
-			end
-		end
-		if UnitPower("pet") ~= ScriptEnv.pet_power then
-			local pet_guid = UnitGUID("pet")
-			for font_string in pairs(power_cache) do
-				if font_string.frame.guid == pet_guid then
-					to_update[font_string] = 0
-				end
-			end
-		end
-	end
 	-- Fast updates for healthbars
 	if predicted_health and next(hp_cache) then
 		for font_string in pairs(hp_cache) do

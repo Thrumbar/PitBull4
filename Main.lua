@@ -15,66 +15,56 @@ local SINGLETON_CLASSIFICATIONS = {
 	"pettarget",
 	"target",
 	"targettarget",
-	"targettargettarget",
 	"focus",
 	"focustarget",
-	"focustargettarget",
 }
 
 local UNIT_GROUPS = {
 	"party",
 	"partytarget",
-	"partytargettarget",
 	"partypet",
 	"partypettarget",
-	"partypettargettarget",
 	"arena",
 	"arenatarget",
-	"arenatargettarget",
 	"arenapet",
 	"arenapettarget",
-	"arenapettargettarget",
 	"raid",
 	"raidtarget",
-	"raidtargettarget",
 	"raidpet",
 	"raidpettarget",
-	"raidpettargettarget",
 	"boss",
-	"bosstarget",
-	"bosstargettarget",
 }
 
-local NORMAL_UNITS = {
-	"player",
-	"pet",
-	"target",
-	"focus",
-	-- "mouseover",
-}
-for i = 1, _G.MAX_PARTY_MEMBERS do
-	NORMAL_UNITS[#NORMAL_UNITS+1] = "party" .. i
-	NORMAL_UNITS[#NORMAL_UNITS+1] = "partypet" .. i
-end
-for i = 1, 5 do
-	NORMAL_UNITS[#NORMAL_UNITS+1] = "arena" .. i
-	NORMAL_UNITS[#NORMAL_UNITS+1] = "arenapet" .. i
-end
-for i = 1, _G.MAX_RAID_MEMBERS do
-	NORMAL_UNITS[#NORMAL_UNITS+1] = "raid" .. i
-end
-for i = 1, _G.MAX_BOSS_FRAMES do
-	NORMAL_UNITS[#NORMAL_UNITS+1] = "boss" .. i
-end
+-- local NORMAL_UNITS = {
+-- 	"player",
+-- 	"pet",
+-- 	"target",
+-- 	"focus",
+-- 	-- "mouseover",
+-- }
+-- for i = 1, _G.MAX_PARTY_MEMBERS do
+-- 	NORMAL_UNITS[#NORMAL_UNITS+1] = "party" .. i
+-- 	NORMAL_UNITS[#NORMAL_UNITS+1] = "partypet" .. i
+-- end
+-- for i = 1, 5 do
+-- 	NORMAL_UNITS[#NORMAL_UNITS+1] = "arena" .. i
+-- 	NORMAL_UNITS[#NORMAL_UNITS+1] = "arenapet" .. i
+-- end
+-- for i = 1, _G.MAX_RAID_MEMBERS do
+-- 	NORMAL_UNITS[#NORMAL_UNITS+1] = "raid" .. i
+-- end
+-- for i = 1, _G.MAX_BOSS_FRAMES do
+-- 	NORMAL_UNITS[#NORMAL_UNITS+1] = "boss" .. i
+-- end
 
-do
-	local tmp = NORMAL_UNITS
-	NORMAL_UNITS = {}
-	for i, v in ipairs(tmp) do
-		NORMAL_UNITS[v] = true
-	end
-	tmp = nil
-end
+-- do
+-- 	local inverted = NORMAL_UNITS
+-- 	NORMAL_UNITS = {}
+-- 	for i, v in ipairs(inverted) do
+-- 		NORMAL_UNITS[v] = true
+-- 	end
+-- 	inverted = nil
+-- end
 
 local LibSharedMedia = LibStub("LibSharedMedia-3.0", true)
 local DEFAULT_LSM_FONT = "Arial Narrow"
@@ -82,7 +72,7 @@ if LibSharedMedia and not LibSharedMedia:IsValid("font", DEFAULT_LSM_FONT) then 
 	DEFAULT_LSM_FONT = LibSharedMedia:GetDefault("font")
 end
 
-local CURRENT_CONFIG_VERSION = 8
+local CURRENT_CONFIG_VERSION = 9
 
 local DATABASE_DEFAULTS = {
 	profile = {
@@ -228,7 +218,7 @@ local DEFAULT_GROUPS = {
 		anchor = "", -- automatic from growth direction
 		relative_to = "0", -- UIParent
 		relative_point = "TOPLEFT",
-		position_x = 10,
+		position_x = 30,
 		position_y = -260,
 	},
 	[L["Party pets"]] = {
@@ -266,7 +256,7 @@ local DEFAULT_UNITS =  {
 		anchor = "TOPLEFT",
 		relative_to = "0", -- UIParent
 		relative_point = "TOPLEFT",
-		position_x = 10,
+		position_x = 30,
 		position_y = -25,
 	},
 	[L["Player's pet"]] = {
@@ -287,7 +277,7 @@ local DEFAULT_UNITS =  {
 		anchor = "TOPLEFT",
 		relative_to = "0", -- UIParent
 		relative_point = "TOPLEFT",
-		position_x = 250,
+		position_x = 270,
 		position_y = -25,
 	},
 	[format(L["%s's target"],L["Target"])] = {
@@ -299,23 +289,17 @@ local DEFAULT_UNITS =  {
 		position_x = 0,
 		position_y = 0,
 	},
-	[format(L["%s's target"],format(L["%s's target"],L["Target"]))] = {
-		unit = "targettargettarget",
-	},
 	[L["Focus"]] = {
 		enabled = true,
 		unit = "focus",
 		anchor = "TOPLEFT",
 		relative_to = "0", -- UIParent
 		relative_point = "TOPLEFT",
-		position_x = 250,
+		position_x = 270,
 		position_y = -260,
 	},
 	[format(L["%s's target"],L["Focus"])]= {
 		unit = "focustarget",
-	},
-	[format(L["%s's target"],format(L["%s's target"],L["Focus"]))] = {
-		unit = "focustargettarget",
 	},
 }
 
@@ -494,62 +478,6 @@ PitBull4.guid_to_unit_ids = guid_to_unit_ids
 -- for the details of the relative_to value.
 local frames_to_anchor = {}
 PitBull4.frames_to_anchor = frames_to_anchor
-
-local function get_best_unit(guid)
-	if not guid then
-		return nil
-	end
-
-	local guid_to_unit_ids__guid = guid_to_unit_ids[guid]
-	if not guid_to_unit_ids__guid then
-		return nil
-	end
-
-	return (next(guid_to_unit_ids__guid))
-end
-PitBull4.get_best_unit = get_best_unit
-
-local function refresh_guid(unit,new_guid)
-	if not NORMAL_UNITS[unit] then
-		return
-	end
-
-	local old_guid = unit_id_to_guid[unit]
-	if new_guid == old_guid then
-		return
-	end
-	unit_id_to_guid[unit] = new_guid
-
-	if old_guid then
-		local guid_to_unit_ids__old_guid = guid_to_unit_ids[old_guid]
-		guid_to_unit_ids__old_guid[unit] = nil
-		if not next(guid_to_unit_ids__old_guid) then
-			guid_to_unit_ids[old_guid] = del(guid_to_unit_ids__old_guid)
-		end
-	end
-
-	if new_guid then
-		local guid_to_unit_ids__new_guid = guid_to_unit_ids[new_guid]
-		if not guid_to_unit_ids__new_guid then
-			guid_to_unit_ids__new_guid = new()
-			guid_to_unit_ids[new_guid] = guid_to_unit_ids__new_guid
-		end
-		guid_to_unit_ids__new_guid[unit] = true
-	end
-
-	for frame in PitBull4:IterateWackyFrames() do
-		if frame.best_unit == unit or frame.guid == new_guid then
-			frame:UpdateBestUnit()
-		end
-	end
-end
-
-local function refresh_all_guids()
-	for unit in pairs(NORMAL_UNITS) do
-		local guid = UnitGUID(unit)
-		refresh_guid(unit,guid)
-	end
-end
 
 --- Wrap the given function so that any call to it will be piped through PitBull4:RunOnLeaveCombat.
 -- @param func function to call
@@ -1088,7 +1016,7 @@ local upgrade_functions = {
 		if not profiles then return true end
 		for profile, profile_db in pairs(profiles) do
 			local units = profile_db.units
-			if units then
+			if profile_db.units then
 				for unit, unit_db in pairs(units) do
 					-- Check units for orphaned layouts
 					local layout = unit_db.layout or L["Normal"]
@@ -1249,6 +1177,79 @@ local upgrade_functions = {
 
 		return true
 	end,
+	[8] = function(sv)
+		-- Compound unit purge
+		if not sv.profiles then return true end
+
+		local compound_units = {
+			-- singleton
+			targettargettarget = true,
+			focustargettarget = true,
+			-- group
+			partytargettarget = true,
+			partypettargettarget = true,
+			arenatargettarget = true,
+			arenapettargettarget = true,
+			raidtargettarget = true,
+			raidpettargettarget = true,
+			bosstarget = true,
+			bosstargettarget = true,
+		}
+		local removed_groups = {}
+		local removed_units = {}
+
+		-- remove frames that use compound units
+		for profile, profile_db in next, sv.profiles do
+			if profile_db.made_groups then
+				for group, group_db in next, profile_db.groups do
+					if group_db and compound_units[group_db.unit_group] then
+						profile_db.groups[group] = nil
+						removed_groups[group] = true
+					end
+				end
+			end
+			if profile_db.made_units then
+				for unit, unit_db in next, profile_db.units do
+					if unit_db and compound_units[unit_db.unit] then
+						profile_db.units[unit] = nil
+						removed_units[unit] = true
+					end
+				end
+			end
+		end
+
+		-- reset anchor refs for removed frames
+		local function check_anchor(info)
+			for frame_name, frame_db in next, info do
+				local relative_to = frame_db and frame_db.relative_to
+				if not relative_to or relative_to == "0" then return end
+
+				local relative_type = relative_to:sub(1,1)
+				local relative_name = relative_to:sub(2)
+				if
+					(relative_type == "S" and removed_units[relative_name]) or
+					((relative_type == "g" or relative_type == "f") and removed_groups[relative_name])
+				then
+					frame_db.anchor = nil
+					frame_db.relative_to = nil
+					frame_db.relative_point = nil
+					frame_db.position_x = nil
+					frame_db.position_y = nil
+				end
+			end
+		end
+
+		for profile, profile_db in next, sv.profiles do
+			if next(removed_groups) ~= nil then
+				check_anchor(profile_db.groups)
+			end
+			if next(removed_units) ~= nil then
+				check_anchor(profile_db.units)
+			end
+		end
+
+		return true
+	end,
 }
 
 local function check_config_version(sv)
@@ -1266,7 +1267,8 @@ local function check_config_version(sv)
 	while (global.config_version < CURRENT_CONFIG_VERSION) do
 		if upgrade_functions[global.config_version] then
 			if not upgrade_functions[global.config_version](sv) then
-				error(format(L["Problem upgrading PitBull4 config_version %d to %d.  Please file a ticket and attach your WTF/Account/$ACCOUNT/SavedVariables/PitBull4.lua file!"],global.config_version,global.config_version + 1))
+				geterrorhandler()(format(L["Problem upgrading PitBull4 config_version %d to %d.  Please file a ticket and attach your WTF/Account/$ACCOUNT/SavedVariables/PitBull4.lua file!"], global.config_version, global.config_version + 1))
+				return
 			end
 		end
 		global.config_version = global.config_version + 1
@@ -1672,8 +1674,6 @@ local timerFrame = CreateFrame("Frame")
 timerFrame:Hide()
 
 function PitBull4:OnEnable()
-	self:ScheduleRepeatingTimer(refresh_all_guids, 15)
-
 	-- register unit change events
 	self:RegisterEvent("PLAYER_TARGET_CHANGED")
 	self:RegisterEvent("PLAYER_FOCUS_CHANGED")
@@ -1691,7 +1691,7 @@ function PitBull4:OnEnable()
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 	self:RegisterEvent("PLAYER_REGEN_DISABLED")
 
-	self:RegisterEvent("GROUP_ROSTER_UPDATE")
+	-- self:RegisterEvent("GROUP_ROSTER_UPDATE")
 
 	self:RegisterEvent("PLAYER_ENTERING_WORLD")
 	self:RegisterEvent("PLAYER_LEAVING_WORLD")
@@ -1715,7 +1715,7 @@ local wacky_update_rate
 local current_wacky_frame
 timerFrame:SetScript("OnUpdate",function(self, elapsed)
 	local num_wacky_frames = PitBull4.num_wacky_frames
-	if num_wacky_frames <= 0 then return end
+	if num_wacky_frames < 1 then return end
 	wacky_update_rate = 0.15 / num_wacky_frames
 	timer = timer + elapsed
 	while timer > wacky_update_rate do
@@ -1755,16 +1755,6 @@ anchor_timer:SetScript("OnUpdate",function(self, elapsed)
 end)
 PitBull4.anchor_timer = anchor_timer
 
---- Iterate over all wacky frames, and call their respective :UpdateGUID methods.
--- @usage PitBull4:CheckWackyFramesForGUIDUpdate()
-function PitBull4:CheckWackyFramesForGUIDUpdate()
-	for frame in self:IterateWackyFrames() do
-		if frame.unit and frame:IsShown() then
-			frame:UpdateGUID(UnitGUID(frame.unit))
-		end
-	end
-end
-
 --- Check the GUID of the given UnitID and send that info to all frames for that UnitID
 -- @param unit the UnitID to check
 -- @param is_pet pass true if calling from UNIT_PET
@@ -1775,7 +1765,7 @@ function PitBull4:CheckGUIDForUnitID(unit, is_pet)
 		return
 	end
 	local guid = UnitGUID(unit)
-	refresh_guid(unit,guid)
+	-- refresh_guid(unit, guid)
 
 	-- If there is no guid then we want to disallow upating the frame
 	-- However, if there is a guid we want to pass nil and leave it up
@@ -1802,33 +1792,29 @@ end
 function PitBull4:PLAYER_FOCUS_CHANGED()
 	self:CheckGUIDForUnitID("focus")
 	self:CheckGUIDForUnitID("focustarget")
-	self:CheckGUIDForUnitID("focustargettarget")
 end
 
 function PitBull4:PLAYER_TARGET_CHANGED()
 	self:CheckGUIDForUnitID("target")
 	self:CheckGUIDForUnitID("targettarget")
-	self:CheckGUIDForUnitID("targettargettarget")
 end
 
 function PitBull4:UNIT_TARGET(_, unit)
 	if unit ~= "player" then
 		self:CheckGUIDForUnitID(unit .. "target")
-		self:CheckGUIDForUnitID(unit .. "targettarget")
 	end
 end
 
 function PitBull4:UNIT_PET(_, unit)
 	self:CheckGUIDForUnitID(unit .. "pet", true)
 	self:CheckGUIDForUnitID(unit .. "pettarget")
-	self:CheckGUIDForUnitID(unit .. "pettargettarget")
 end
 
 function PitBull4:UNIT_FACTION(_, unit)
 	-- On UNIT_FACTION changes update bars to allow coloring changes based on
 	-- hostility.
 	for frame in self:IterateFramesForUnitID(unit) do
-		for _, module in self:IterateModulesOfType("bar","bar_provider") do
+		for _, module in self:IterateModulesOfType("bar", "secret_bar", "bar_provider") do
 			module:Update(frame)
 		end
 	end
@@ -1987,12 +1973,10 @@ end
 
 function PitBull4:PLAYER_ENTERING_WORLD()
 	self.leaving_world = nil
-	refresh_all_guids()
 end
 
-function PitBull4:GROUP_ROSTER_UPDATE()
-	refresh_all_guids()
-end
+-- function PitBull4:GROUP_ROSTER_UPDATE()
+-- end
 
 function PitBull4:PET_BATTLE_OPENING_START()
 	if PitBull4.config_mode then

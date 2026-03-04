@@ -360,11 +360,11 @@ end
 -- @param guid the GUID in question to update
 -- @usage MyModule:UpdateForGUID(UnitGUID("player"))
 function Module:UpdateForGUID(guid)
-	if DEBUG then
-		expect(guid, 'typeof', 'string;nil')
-	end
+	-- if DEBUG then
+	-- 	expect(guid, 'typeof', 'string;nil')
+	-- end
 
-	if not guid then
+	if issecretvalue(guid) or not guid then
 		return
 	end
 
@@ -400,11 +400,11 @@ function Module:UpdateNonWacky()
 	for frame in PitBull4:IterateNonWackyFrames() do
 		self:Update(frame)
 	end
-	for frame in PitBull4:IterateWackyFrames() do
-		if frame.best_unit then
-			self:Update(frame)
-		end
-	end
+	-- for frame in PitBull4:IterateWackyFrames() do
+	-- 	if frame.best_unit then
+	-- 		self:Update(frame)
+	-- 	end
+	-- end
 end
 
 local function Print(self, frame, ...)

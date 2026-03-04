@@ -5,8 +5,8 @@ function Icon:SetTexture(path)
 	self.texture:SetTexture(path)
 end
 
-function Icon:SetTexCoord(c1, c2, c3, c4)
-	self.texture:SetTexCoord(c1, c2, c3, c4)
+function Icon:SetTexCoord(...)
+	self.texture:SetTexCoord(...)
 end
 
 PitBull4.Controls.MakeNewControlType("Icon", "Button", function(control)
@@ -27,4 +27,5 @@ end, function(control)
 	-- onRetrieve
 end, function(control)
 	-- onDelete
+	control:SetToDefaults()
 end)

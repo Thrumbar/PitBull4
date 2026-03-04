@@ -15,7 +15,7 @@ L["Select which profile to share."]
 L["Share"]
 L["Share layouts"]
 L["Share profile"]
-L["Some things to keep in mind:\n- Fonts and textures are not included and may get reset to default if not available.\n- Global module settings are not included with layouts (e.g. Aura filters)\n- Module settings and will only be imported if the module is currently enabled.\n"]
+L["Some things to keep in mind:\n- Fonts and textures are not included and may get reset to default if not available.\n- Global module settings are not included with layouts (e.g. Aura filters)\n- Module settings will only be imported if the module is currently enabled.\n"]
 
 -- popup
 L["Are you sure you want to import the following layouts into the current profile?\n\n%s"]
@@ -440,7 +440,7 @@ function PitBull4.Options.get_share_options()
 		args = {
 			export_info = {
 				type = "description",
-				name = L["Some things to keep in mind:\n- Fonts and textures are not included and may get reset to default if not available.\n- Global module settings are not included with layouts (e.g. Aura filters)\n- Module settings and will only be imported if the module is currently enabled.\n"],
+				name = L["Some things to keep in mind:\n- Fonts and textures are not included and may get reset to default if not available.\n- Global module settings are not included with layouts (e.g. Aura filters)\n- Module settings will only be imported if the module is currently enabled.\n"],
 				order = 1,
 				fontSize = "medium"
 			},

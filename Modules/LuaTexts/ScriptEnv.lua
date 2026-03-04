@@ -25,7 +25,16 @@ local offline_times = PitBull4_LuaTexts.offline_times
 local afk_times = PitBull4_LuaTexts.afk_times
 local dnd = PitBull4_LuaTexts.dnd
 local dead_times = PitBull4_LuaTexts.dead_times
+local group_members = PitBull4_LuaTexts.group_members
 
+
+local function unit_guid(unit)
+	if not C_Secrets.ShouldUnitIdentityBeSecret(unit) then
+		-- Update on wacky frames if we're not locked down
+		return UnitGUID(unit)
+	end
+	return group_members[unit]
+end
 
 -- The following functions exist to provide a method to help people moving
 -- from LibDogTag.  They implement the functionality that exists in some of
@@ -314,12 +323,12 @@ ScriptEnv.UpdateIn = UpdateIn
 
 local function IsAFK(unit)
 	afk_cache[ScriptEnv.font_string] = true
-	return not not afk_times[UnitGUID(unit)]
+	return not not afk_times[unit_guid(unit)]
 end
 ScriptEnv.IsAFK = IsAFK
 
 local function AFKDuration(unit)
-	local afk = afk_times[UnitGUID(unit)]
+	local afk = afk_times[unit_guid(unit)]
 	afk_cache[ScriptEnv.font_string] = true
 	if afk then
 		UpdateIn(0.25)
@@ -338,13 +347,13 @@ ScriptEnv.AFK = AFK
 
 local function IsDND(unit)
 	dnd_cache[ScriptEnv.font_string] = true
-	return not not dnd[UnitGUID(unit)]
+	return not not dnd[unit_guid(unit)]
 end
 ScriptEnv.IsDND = IsDND
 
 local function DND(unit)
 	dnd_cache[ScriptEnv.font_string] = true
-	if dnd[UnitGUID(unit)] then
+	if dnd[unit_guid(unit)] then
 		return _G.DND
 	end
 end
@@ -599,7 +608,7 @@ end
 ScriptEnv.IsPet = IsPet
 
 local function OfflineDuration(unit)
-	local offline = offline_times[UnitGUID(unit)]
+	local offline = offline_times[unit_guid(unit)]
 	offline_cache[ScriptEnv.font_string] = true
 	if offline then
 		UpdateIn(0.25)
@@ -618,12 +627,12 @@ ScriptEnv.Offline = Offline
 
 local function IsOffline(unit)
 	offline_cache[ScriptEnv.font_string] = true
-	return not not offline_times[UnitGUID(unit)]
+	return not not offline_times[unit_guid(unit)]
 end
 ScriptEnv.IsOffline = IsOffline
 
 local function DeadDuration(unit)
-	local dead_time = dead_times[UnitGUID(unit)]
+	local dead_time = dead_times[unit_guid(unit)]
 	dead_cache[ScriptEnv.font_string] = true
 	if dead_time then
 		UpdateIn(0.25)

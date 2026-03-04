@@ -13,18 +13,14 @@ PitBull4_Background:SetDefaults({
 	color = { 0, 0, 0, 0.5 }
 })
 
-local guid_demanding_update = nil
-
 function PitBull4_Background:OnEnable()
 	self:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 end
 
-function PitBull4_Background:UNIT_PORTRAIT_UPDATE(event, unit)
-	if not unit then return end
-	local guid = UnitGUID(unit)
-	guid_demanding_update = guid
-	self:UpdateForGUID(guid)
-	guid_demanding_update = nil
+function PitBull4_Background:UNIT_PORTRAIT_UPDATE(_, unit)
+	if unit then
+		self:UpdateForUnitID(unit)
+	end
 end
 
 -- this is here to allow it to be overridden, e.g., aggro module
@@ -70,12 +66,6 @@ function PitBull4_Background:UpdateFrame(frame)
 		frame.PortraitBG = portrait
 	end
 
-	if portrait.guid == frame.guid and guid_demanding_update ~= frame.guid then
-		portrait:Show()
-		return false
-	end
-
-	portrait.guid = frame.guid
 	portrait:ClearModel()
 	if not falling_back then
 		portrait:SetUnit(frame.unit)
@@ -95,28 +85,19 @@ function PitBull4_Background:ClearFrame(frame)
 	if frame.Background then
 		frame.Background = frame.Background:Delete()
 	end
-
 	if frame.PortraitBG then
-		local portrait = frame.PortraitBG
-		portrait.guid = nil
-		frame.PortraitBG = portrait:Delete()
-
+		frame.PortraitBG = frame.PortraitBG:Delete()
 		return true
 	end
-
 	return false
 end
 
 function PitBull4_Background:OnHide(frame)
-	local background = frame.Background
-	if background then
-		background:Hide()
+	if frame.Background then
+		frame.Background:Hide()
 	end
-
-	local portrait = frame.PortraitBG
-	if portrait then
-		portrait.guid = frame.guid
-		portrait:Hide()
+	if frame.PortraitBG then
+		frame.PortraitBG:Hide()
 	end
 end
 

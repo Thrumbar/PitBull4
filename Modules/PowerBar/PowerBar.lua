@@ -18,7 +18,7 @@ PitBull4_PowerBar:SetDefaults({
 	use_atlas = false,
 })
 
-local guids_to_update = {}
+local units_to_update = {}
 local type_to_token = {
 	"MANA", "RAGE", "FOCUS", "ENERGY", "CHI",
 	"RUNES", "RUNIC_POWER", "SOUL_SHARDS", "LUNAR_POWER",
@@ -49,13 +49,13 @@ function PitBull4_PowerBar:OnDisable()
 end
 
 timerFrame:SetScript("OnUpdate", function()
-	if next(guids_to_update) then
+	if next(units_to_update) then
 		for frame in PitBull4:IterateFrames() do
-			if guids_to_update[frame.guid] then
+			if units_to_update[frame.unit] then
 				PitBull4_PowerBar:Update(frame)
 			end
 		end
-		wipe(guids_to_update)
+		wipe(units_to_update)
 	end
 end)
 
@@ -101,7 +101,7 @@ function PitBull4_PowerBar:GetExampleColor(frame)
 	return unpack(PitBull4.PowerColors.MANA)
 end
 
-function PitBull4_PowerBar:UNIT_POWER_FREQUENT(event, unit, power_type)
+function PitBull4_PowerBar:UNIT_POWER_FREQUENT(_, unit, power_type)
 	if not unit then return end
 	local _, power_token = UnitPowerType(unit)
 	-- fix units that have a special power type but update as ENERGY
@@ -109,18 +109,12 @@ function PitBull4_PowerBar:UNIT_POWER_FREQUENT(event, unit, power_type)
 		power_token = "ENERGY"
 	end
 	if power_token == power_type then
-		local guid = UnitGUID(unit)
-		if guid then
-			guids_to_update[guid] = true
-		end
+		units_to_update[unit] = true
 	end
 end
 
-function PitBull4_PowerBar:UNIT_DISPLAYPOWER(event, unit)
-	local guid = unit and UnitGUID(unit)
-	if guid then
-		guids_to_update[guid] = true
-	end
+function PitBull4_PowerBar:UNIT_DISPLAYPOWER(_, unit)
+	units_to_update[unit] = true
 end
 
 PitBull4_PowerBar:SetLayoutOptionsFunction(function(self)

@@ -288,7 +288,7 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 		-- normally.
 		if self:IsVisible() then
 			local guid = new_unit and UnitGUID(new_unit) or nil
-			if guid ~= self.guid then
+			if issecretvalue(guid) or guid ~= self.guid then
 				self.unit = new_unit -- Make sure unit is set before updates happen.
 				updated = true
 				self:UpdateGUID(guid)
@@ -300,11 +300,11 @@ function UnitFrame__scripts:OnAttributeChanged(key, value)
 		end
 
 		-- debug assertion to help try and track down ticket 475.
-		if DEBUG then
-			if not new_unit then
-				expect(self.guid, '==', nil)
-			end
-		end
+		-- if DEBUG then
+		-- 	if not new_unit then
+		-- 		expect(self.guid, '==', nil)
+		-- 	end
+		-- end
 
 		if old_unit then
 			PitBull4.unit_id_to_frames[old_unit][self] = nil
@@ -349,7 +349,7 @@ end
 function UnitFrame__scripts:OnShow()
 	if self.unit then
 		local guid = UnitGUID(self.unit)
-		if self.is_wacky or guid ~= self.guid then
+		if self.is_wacky or issecretvalue(guid) or guid ~= self.guid then
 			self:UpdateGUID(guid)
 		end
 	end
@@ -369,7 +369,7 @@ function UnitFrame__scripts:OnHide()
 	local force_show = self.force_show
 	-- Clear the guid without causing an update unless the frame
 	-- is force_shown in which case force an update.
-	self:UpdateGUID(nil,force_show and true or false)
+	self:UpdateGUID(nil, force_show and true or false)
 	if force_show then
 		-- Nothing more to do the frame isn't really being hidden
 		return
@@ -727,25 +727,6 @@ function UnitFrame:GetFont(font_override, size_multiplier)
 	return font or DEFAULT_FONT, DEFAULT_FONT_SIZE * layout_db.font_size * (size_multiplier or 1) * self.classification_db.font_multiplier
 end
 
-local get_best_unit = PitBull4.get_best_unit
-function UnitFrame:UpdateBestUnit()
-	local old_best_unit = self.best_unit
-	local new_best_unit = self.is_wacky and get_best_unit(self.guid) or nil
-	if old_best_unit == new_best_unit then
-		return
-	end
-
-	self.best_unit = new_best_unit
-
-	if old_best_unit then
-		PitBull4.unit_id_to_frames_with_wacky[old_best_unit][self] = nil
-	end
-
-	if new_best_unit then
-		PitBull4.unit_id_to_frames_with_wacky[new_best_unit][self] = true
-	end
-end
-
 --- Update all details about the UnitFrame, possibly after a GUID change
 -- @param same_guid whether the previous GUID is the same as the current, at which point is less crucial to update
 -- @param update_layout whether to update the layout no matter what
@@ -767,14 +748,12 @@ function UnitFrame:Update(same_guid, update_layout)
 	-- member units don't have a configured unit but a unit_group and
 	-- the unit is set by the SecureGroupHeaderTemplate instead.
 	if self.is_singleton then
-		self:ProxySetAttribute("unit",classification_db.unit)
+		self:ProxySetAttribute("unit", classification_db.unit)
 	end
 
-	if not self.guid and not self.force_show then
+	if self.guid == nil and not self.force_show then
 		if self.populated then
 			self.populated = nil
-
-			self:UpdateBestUnit()
 
 			for _, module in PitBull4:IterateEnabledModules() do
 				module:Clear(self)
@@ -783,10 +762,6 @@ function UnitFrame:Update(same_guid, update_layout)
 		return
 	end
 	self.populated = true
-
-	if not same_guid then
-		self:UpdateBestUnit()
-	end
 
 	local changed = update_layout
 	for _, module_type in ipairs(MODULE_UPDATE_ORDER) do
@@ -806,18 +781,22 @@ end
 -- @usage frame:UpdateGUID(UnitGUID(frame.unit))
 -- @usage frame:UpdateGUID(UnitGUID(frame.unit), true)
 function UnitFrame:UpdateGUID(guid, update)
-	if DEBUG then
-		expect(guid, 'typeof', 'string;nil')
-	end
+	-- if DEBUG then
+	-- 	expect(guid, 'typeof', 'string;nil')
+	-- end
 
 	-- if the guids are the same, cut out, but don't if it's a wacky unit that has a guid.
-	if update ~= true and self.guid == guid and not (guid and self.is_wacky and not self.best_unit) then
+	if update ~= true and not issecretvalue(guid) and not issecretvalue(self.guid) and self.guid == guid and not (guid and self.is_wacky) then
 		return
 	end
-	local previousGUID = self.guid
+	local old_guid = self.guid
 	self.guid = guid
 	if update ~= false then
-		self:Update(previousGUID == guid)
+		if issecretvalue(guid) or issecretvalue(old_guid) then
+			self:Update(not self.is_wacky)
+		else
+			self:Update(old_guid == guid)
+		end
 	end
 end
 

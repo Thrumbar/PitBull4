@@ -122,10 +122,7 @@ function PitBull4_Aggro:Background_GetColor(module, frame)
 end
 
 function PitBull4_Aggro:UNIT_THREAT_SITUATION_UPDATE(_, unit)
-	local guid = UnitGUID(unit or "player")
-	if not guid then return end
-
-	for frame in PitBull4:IterateFramesForGUID(guid) do
+	for frame in PitBull4:IterateFramesForUnitID(unit) do
 		local db = self:GetLayoutDB(frame)
 		if db.enabled then
 			if db.kind == "HealthBar" then

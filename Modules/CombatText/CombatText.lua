@@ -75,7 +75,7 @@ function PitBull4_CombatText:UpdateFrame(frame)
 	local font, size = self:GetFont(frame)
 	font_string:SetFont(font, size * font_string.size_modifier, "OUTLINE")
 
-	if frame.force_show and not frame.guid then
+	if frame.force_show and (not frame.unit or not UnitExists(frame.unit)) then
 		font_string:SetText(EXAMPLE_TEXT)
 	elseif font_string:GetText() == EXAMPLE_TEXT then
 		font_string:SetText("")

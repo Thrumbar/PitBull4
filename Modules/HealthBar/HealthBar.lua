@@ -30,12 +30,10 @@ PitBull4_HealthBar:SetDefaults({
 local timerFrame = CreateFrame("Frame")
 timerFrame:Hide()
 
-local guids_to_update = {}
-local player_guid
+local units_to_update = {}
+
 
 function PitBull4_HealthBar:OnEnable()
-	player_guid = UnitGUID("player")
-
 	timerFrame:Show()
 
 	self:RegisterEvent("UNIT_HEALTH")
@@ -51,12 +49,14 @@ function PitBull4_HealthBar:OnDisable()
 end
 
 timerFrame:SetScript("OnUpdate", function()
-	for guid in pairs(guids_to_update) do
-		for frame in PitBull4:IterateFramesForGUID(guid) do
-			PitBull4_HealthBar:Update(frame)
+	if next(units_to_update) then
+		for frame in PitBull4:IterateFrames() do
+			if units_to_update[frame.unit] then
+				PitBull4_HealthBar:Update(frame)
+			end
 		end
+		wipe(units_to_update)
 	end
-	wipe(guids_to_update)
 end)
 
 function PitBull4_HealthBar:GetValue(frame)
@@ -116,14 +116,11 @@ function PitBull4_HealthBar:GetExampleColor(frame, value)
 end
 
 function PitBull4_HealthBar:UNIT_HEALTH(_, unit)
-	local guid = unit and UnitGUID(unit)
-	if guid then
-		guids_to_update[guid] = true
-	end
+	units_to_update[unit] = true
 end
 
 function PitBull4_HealthBar:PLAYER_ALIVE()
-	guids_to_update[player_guid] = true
+	units_to_update.player = true
 end
 
 PitBull4_HealthBar:SetColorOptionsFunction(function(self)

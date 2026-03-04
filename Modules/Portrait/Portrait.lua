@@ -36,14 +36,10 @@ function PitBull4_Portrait:OnEnable()
 	-- self:RegisterEvent("UNIT_MODEL_CHANGED", "UNIT_PORTRAIT_UPDATE")
 end
 
-local guid_demanding_update = nil
-
 function PitBull4_Portrait:UNIT_PORTRAIT_UPDATE(event, unit)
-	if not unit then return end
-	local guid = UnitGUID(unit)
-	guid_demanding_update = guid
-	self:UpdateForGUID(guid)
-	guid_demanding_update = nil
+	if unit then
+		self:UpdateForUnitID(unit)
+	end
 end
 
 function PitBull4_Portrait:ClearFrame(frame)
@@ -72,13 +68,8 @@ function PitBull4_Portrait:ClearFrame(frame)
 end
 
 function PitBull4_Portrait:OnHide(frame)
-	local portrait = frame.Portrait
-	if portrait then
-		portrait.guid = frame.guid
-		if portrait.bg then
-			portrait.bg:Hide()
-		end
-		portrait:Hide()
+	if frame.Portrait then
+		frame.Portrait:Hide()
 	end
 end
 
@@ -139,14 +130,6 @@ function PitBull4_Portrait:UpdateFrame(frame)
 		bg:SetColorTexture(unpack(layout_db.color))
 	end
 
-	if portrait.guid == frame.guid and guid_demanding_update ~= frame.guid then
-		if portrait.bg then
-			portrait.bg:Show()
-		end
-		portrait:Show()
-		return false
-	end
-
 	local full_body = layout_db.full_body
 	portrait.full_body = full_body
 	portrait.guid = frame.guid
@@ -184,10 +167,6 @@ function PitBull4_Portrait:UpdateFrame(frame)
 			portrait.texture:SetTexture([[Interface\Icons\Ability_Hunter_BeastCall]])
 			portrait.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 		end
-	end
-
-	if portrait.bg then
-		portrait.bg:Show()
 	end
 	portrait:Show()
 

@@ -13,12 +13,9 @@ PitBull4_ReadyCheckIcon:SetDefaults({
 	position = 1,
 })
 
-local PLAYER_GUID
 function PitBull4_ReadyCheckIcon:OnEnable()
-	PLAYER_GUID = UnitGUID("player")
-
-	self:RegisterEvent("READY_CHECK")
-	self:RegisterEvent("READY_CHECK_CONFIRM")
+	self:RegisterEvent("READY_CHECK", "UpdateAll")
+	self:RegisterEvent("READY_CHECK_CONFIRM", "UpdateAll")
 	self:RegisterEvent("READY_CHECK_FINISHED")
 end
 
@@ -28,35 +25,23 @@ local status_to_texture = {
 	waiting = [[Interface\RAIDFRAME\ReadyCheck-Waiting]],
 }
 
-local guid_to_status = {}
-
 function PitBull4_ReadyCheckIcon:GetTexture(frame)
-	return status_to_texture[guid_to_status[frame.guid]]
+	local status = GetReadyCheckStatus(frame.unit)
+	return status_to_texture[status]
 end
 
-local EXAMPLE_CLASSIFICATIONS = {
-	player = true,
-	party = true,
-	raid = true,
-}
 function PitBull4_ReadyCheckIcon:GetExampleTexture(frame)
 	if frame.is_singleton then
-		if not EXAMPLE_CLASSIFICATIONS[frame.classification] then
+		if frame.classification ~= "player" then
 			return nil
 		end
-	elseif not EXAMPLE_CLASSIFICATIONS[frame.header.unit_group] then
+	elseif frame.header.unit_group ~= "party" and frame.header.unit_group ~= "raid" then
 		return nil
 	end
 
 	local unit = frame.unit or frame:GetName()
-	local index = unit:match(".*(%d+)")
-	if index then
-		index = index+0
-	else
-		index = 0
-	end
+	local index = tonumber(unit:match(".*(%d+)")) or 0
 	index = index + #unit + unit:byte()
-
 	index = index % 3
 
 	local status
@@ -71,39 +56,6 @@ function PitBull4_ReadyCheckIcon:GetExampleTexture(frame)
 	return status_to_texture[status]
 end
 
-function PitBull4_ReadyCheckIcon:CacheRaidCheckStatuses()
-	wipe(guid_to_status)
-	if UnitInRaid("player") then
-		for i = 1, MAX_RAID_MEMBERS do
-			local unit = "raid" .. i
-			local guid = UnitGUID(unit)
-			if guid then
-				guid_to_status[guid] = GetReadyCheckStatus(unit)
-			end
-		end
-	elseif UnitInParty("player") then
-		guid_to_status[PLAYER_GUID] = GetReadyCheckStatus("player")
-
-		for i = 1, MAX_PARTY_MEMBERS do
-			local unit = "party" .. i
-			local guid = UnitGUID(unit)
-			if guid then
-				guid_to_status[guid] = GetReadyCheckStatus(unit)
-			end
-		end
-	end
-end
-
-function PitBull4_ReadyCheckIcon:StartFadeOut()
-	-- TODO: actually make it have a fade out effect
-	self:READY_CHECK()
-end
-
-function PitBull4_ReadyCheckIcon:READY_CHECK()
-	self:CacheRaidCheckStatuses()
-	self:UpdateAll()
-end
-PitBull4_ReadyCheckIcon.READY_CHECK_CONFIRM = PitBull4_ReadyCheckIcon.READY_CHECK
 function PitBull4_ReadyCheckIcon:READY_CHECK_FINISHED()
-	self:ScheduleTimer("StartFadeOut", 8.5)
+	self:ScheduleTimer("UpdateAll", 8.5)
 end
