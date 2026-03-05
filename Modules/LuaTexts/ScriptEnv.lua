@@ -4,6 +4,8 @@ local PitBull4 = _G.PitBull4
 local L = PitBull4.L
 local PitBull4_LuaTexts = PitBull4:GetModule("LuaTexts")
 
+local ShouldUnitIdentityBeSecret = C_Secrets.ShouldUnitIdentityBeSecret
+
 -- The ScriptEnv table serves as the environment that the scripts run
 -- under LuaTexts run under.  The functions included in it are accessible
 -- to this scripts as though they were local functions to it.  Functions
@@ -37,7 +39,7 @@ local FloorToNearestString = C_StringUtil.FloorToNearestString
 ScriptEnv.FloorToNearestString = FloorToNearestString
 
 local function unit_guid(unit)
-	if not C_Secrets.ShouldUnitIdentityBeSecret(unit) then
+	if not ShouldUnitIdentityBeSecret(unit) then
 		-- Update on wacky frames if we're not locked down
 		return UnitGUID(unit)
 	end

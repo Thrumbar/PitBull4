@@ -3,6 +3,9 @@ local L = PitBull4.L
 
 local PitBull4_LuaTexts = PitBull4:NewModule("LuaTexts", "AceHook-3.0")
 
+local InChatMessagingLockdown = C_ChatInfo.InChatMessagingLockdown
+local ShouldUnitComparisonBeSecret = C_Secrets.ShouldUnitComparisonBeSecret
+
 local test_frame = CreateFrame("Frame") -- Event validation
 
 local texts = {}
@@ -1051,6 +1054,10 @@ local function fix_cast_data()
 	wipe(tmp)
 end
 
+local function compare_units(unit_a, unit_b)
+	return unit_a == unit_b or (not ShouldUnitComparisonBeSecret(unit_a, unit_b) and UnitIsUnit(unit_a, unit_b))
+end
+
 local first = true
 local function update_timers()
 	if first then
@@ -1062,7 +1069,7 @@ local function update_timers()
 			if not offline_times[guid] then
 				offline_times[guid] = GetTime()
 				for font_string in next, offline_cache do
-					if font_string.frame.unit == unit then
+					if compare_units(font_string.frame.unit, unit) then
 						to_update[font_string] = 0
 					end
 				end
@@ -1071,42 +1078,51 @@ local function update_timers()
 			if dnd[guid] then
 				dnd[guid] = nil
 				for font_string in next, dnd_cache do
-					if font_string.frame.unit == unit then
+					if compare_units(font_string.frame.unit, unit) then
+						to_update[font_string] = 0
+					end
+				end
+			end
+		elseif InChatMessagingLockdown() then
+			offline_times[guid] = nil
+			afk_times[guid] = nil -- UpdateIn will clear it
+			if dnd[guid] then
+				dnd[guid] = nil
+				for font_string in next, dnd_cache do
+					if compare_units(font_string.frame.unit, unit) then
 						to_update[font_string] = 0
 					end
 				end
 			end
 		else
 			offline_times[guid] = nil
-			if not C_ChatInfo.InChatMessagingLockdown() then
-				if UnitIsAFK(unit) then
-					if not afk_times[guid] then
-						afk_times[guid] = GetTime()
-						for font_string in next, afk_cache do
-							if font_string.frame.unit == unit then
-								to_update[font_string] = 0
-							end
+			if UnitIsAFK(unit) then
+				if not afk_times[guid] then
+					afk_times[guid] = GetTime()
+					for font_string in next, afk_cache do
+						if compare_units(font_string.frame.unit, unit) then
+							to_update[font_string] = 0
 						end
+					end
+				end
+			else
+				afk_times[guid] = nil
+				local dnd_change = false
+				if UnitIsDND(unit) then
+					if not dnd[guid] then
+						dnd[guid] = true
+						dnd_change = true
 					end
 				else
-					afk_times[guid] = nil
-					local dnd_change = false
-					if UnitIsDND(unit) then
-						if not dnd[guid] then
-							dnd[guid] = true
-							dnd_change = true
-						end
-					else
-						if dnd[guid] then
-							dnd[guid] = nil
-							dnd_change = true
-						end
+					if dnd[guid] then
+						dnd[guid] = nil
+						dnd_change = true
 					end
-					if dnd_change then
-						for font_string in next, dnd_cache do
-							if font_string.frame.unit == unit then
-								to_update[font_string] = 0
-							end
+				end
+				if dnd_change then
+					for font_string in next, dnd_cache do
+						if compare_units(font_string.frame.unit, unit) then
+							to_update[font_string] = 0
 						end
 					end
 				end
@@ -1116,7 +1132,7 @@ local function update_timers()
 			if not dead_times[guid] then
 				dead_times[guid] = GetTime()
 				for font_string in next, dead_cache do
-					if font_string.frame.unit == unit then
+					if compare_units(font_string.frame.unit, unit) then
 						to_update[font_string] = 0
 					end
 				end
