@@ -115,11 +115,11 @@ function BarModule:UpdateFrame(frame)
 	control:SetIcon(icon)
 	control:SetIconPosition(db.icon_on_left)
 
-	local reverse = db.reverse
-	if extra == Enum.StatusBarTimerDirection.RemainingTime then
-		reverse = not reverse
-	end
-	control:SetReverse(reverse)
+	-- local reverse = db.reverse
+	-- if extra == Enum.StatusBarTimerDirection.RemainingTime then
+	-- 	reverse = not reverse
+	-- end
+	-- control:SetDeficiet(reverse)
 
 	local interpolation
 	if self.allow_animations and db.animated then

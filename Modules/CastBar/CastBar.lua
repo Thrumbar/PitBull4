@@ -116,9 +116,12 @@ function PitBull4_CastBar:GetValue(frame)
 	local icon = db.show_icon and data.icon or nil
 
 	if data.casting or data.channeling or data.empowering then
-		return data.duration:GetElapsedPercent(), data.direction, icon
+		if data.direction == Enum.StatusBarTimerDirection.RemainingTime then
+			return data.duration:GetRemainingPercent(), nil, icon
+		end
+		return data.duration:GetElapsedPercent(), nil, icon
 	elseif data.stop_value then
-		return data.stop_value, data.direction, icon
+		return data.stop_value, nil, icon
 	end
 
 	if db.auto_hide then
@@ -293,7 +296,11 @@ function PitBull4_CastBar:UpdateInfo(event, unit, _, _, ...)
 	data.fade_out = true
 	if not data.stop_time then
 		data.stop_time = GetTime()
-		data.stop_value = data.duration:GetElapsedPercent()
+		if data.direction == Enum.StatusBarTimerDirection.RemainingTime then
+			data.stop_value = data.duration:GetRemainingPercent()
+		else
+			data.stop_value = data.duration:GetElapsedPercent()
+		end
 	end
 end
 
