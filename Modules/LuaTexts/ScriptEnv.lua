@@ -27,8 +27,6 @@ local dnd = PitBull4_LuaTexts.dnd
 local dead_times = PitBull4_LuaTexts.dead_times
 local group_members = PitBull4_LuaTexts.group_members
 
-
-
 local WrapString = C_StringUtil.WrapString
 ScriptEnv.WrapString = WrapString
 
@@ -237,19 +235,11 @@ end
 ScriptEnv.UnitIsPlayer = IsPlayer -- existing LuaText compat
 
 local function WrapTextInColor(text, r, g, b)
-	local success, result = pcall(TruncateWhenZero, text)
-	if not success then
-		result = text
-	end
-	return WrapString(result, ("|cff%02x%02x%02x"):format(r, g, b), "|r")
+	return WrapString(text, ("|cff%02x%02x%02x"):format(r, g, b), "|r")
 end
 
 local function WrapTextInColorCode(text, textColorCode)
-	local success, result = pcall(TruncateWhenZero, text)
-	if not success then
-		result = text
-	end
-	return WrapString(result, "|cff"..textColorCode, "|r")
+	return WrapString(text, ("|cff%s"):format(textColorCode), "|r")
 end
 
 local HOSTILE_REACTION = 2

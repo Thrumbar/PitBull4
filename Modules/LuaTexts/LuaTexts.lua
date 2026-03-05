@@ -151,7 +151,7 @@ if s then
   return s
 end
 if UnitIsFriend(unit,"player") then
-	return WrapTextInColorCode(HP(unit), "ffff7f7f")
+  return WrapTextInColorCode(HP(unit), "ffff7f7f")
 else
   return "%s/%s",Short(HP(unit)),Short(MaxHP(unit))
 end]],
@@ -173,7 +173,7 @@ if s then
   return s
 end
 if UnitIsFriend(unit,"player") then
-  local miss = WrapString(Short(MissingHP(unit)), "|cffff7f7f", "|r || ")
+  local miss = WrapString(TruncateWhenZero(MissingHP(unit)), "|cffff7f7f", "|r || ")
   return "%s%s/%s || %s%%",miss,Short(HP(unit)),Short(MaxHP(unit)),PercentHP(unit)
 end
 return "%s/%s || %s%%",Short(HP(unit)),Short(MaxHP(unit)),PercentHP(unit)]],
@@ -1078,33 +1078,35 @@ local function update_timers()
 			end
 		else
 			offline_times[guid] = nil
-			if UnitIsAFK(unit) then
-				if not afk_times[guid] then
-					afk_times[guid] = GetTime()
-					for font_string in next, afk_cache do
-						if font_string.frame.unit == unit then
-							to_update[font_string] = 0
+			if not C_ChatInfo.InChatMessagingLockdown() then
+				if UnitIsAFK(unit) then
+					if not afk_times[guid] then
+						afk_times[guid] = GetTime()
+						for font_string in next, afk_cache do
+							if font_string.frame.unit == unit then
+								to_update[font_string] = 0
+							end
 						end
 					end
-				end
-			else
-				afk_times[guid] = nil
-				local dnd_change = false
-				if UnitIsDND(unit) then
-					if not dnd[guid] then
-						dnd[guid] = true
-						dnd_change = true
-					end
 				else
-					if dnd[guid] then
-						dnd[guid] = nil
-						dnd_change = true
+					afk_times[guid] = nil
+					local dnd_change = false
+					if UnitIsDND(unit) then
+						if not dnd[guid] then
+							dnd[guid] = true
+							dnd_change = true
+						end
+					else
+						if dnd[guid] then
+							dnd[guid] = nil
+							dnd_change = true
+						end
 					end
-				end
-				if dnd_change then
-					for font_string in next, dnd_cache do
-						if font_string.frame.unit == unit then
-							to_update[font_string] = 0
+					if dnd_change then
+						for font_string in next, dnd_cache do
+							if font_string.frame.unit == unit then
+								to_update[font_string] = 0
+							end
 						end
 					end
 				end
