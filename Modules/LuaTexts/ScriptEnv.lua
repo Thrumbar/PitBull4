@@ -5,6 +5,9 @@ local L = PitBull4.L
 local PitBull4_LuaTexts = PitBull4:GetModule("LuaTexts")
 
 local ShouldUnitIdentityBeSecret = C_Secrets.ShouldUnitIdentityBeSecret
+local FloorToNearestString = C_StringUtil.FloorToNearestString
+local TruncateWhenZero = C_StringUtil.TruncateWhenZero
+local WrapString = C_StringUtil.WrapString
 
 -- The ScriptEnv table serves as the environment that the scripts run
 -- under LuaTexts run under.  The functions included in it are accessible
@@ -30,13 +33,8 @@ local dnd = PitBull4_LuaTexts.dnd
 local dead_times = PitBull4_LuaTexts.dead_times
 local group_members = PitBull4_LuaTexts.group_members
 
-local WrapString = C_StringUtil.WrapString
 ScriptEnv.WrapString = WrapString
-
-local TruncateWhenZero = C_StringUtil.TruncateWhenZero
 ScriptEnv.TruncateWhenZero = TruncateWhenZero
-
-local FloorToNearestString = C_StringUtil.FloorToNearestString
 ScriptEnv.FloorToNearestString = FloorToNearestString
 
 local function unit_guid(unit)
@@ -900,6 +898,13 @@ local function Alpha(number)
 end
 ScriptEnv.Alpha = Alpha
 
+local function SecretAlpha(value, alphaIfTrue, alphaIfFalse)
+	PitBull4_LuaTexts.secret_alpha = value
+	PitBull4_LuaTexts.secret_alpha_if_true = alphaIfTrue
+	PitBull4_LuaTexts.secret_alpha_if_false = alphaIfFalse
+end
+ScriptEnv.SecretAlpha = SecretAlpha
+
 local function Outline()
 	PitBull4_LuaTexts.outline = "OUTLINE"
 end
@@ -914,6 +919,11 @@ local function WordWrap()
 	PitBull4_LuaTexts.word_wrap = true
 end
 ScriptEnv.WordWrap = WordWrap
+
+local function FontFlags(flags)
+	PitBull4_LuaTexts.outline = flags -- MONOCHROME, OUTLINE, THICKOUTLINE, SLUG
+end
+ScriptEnv.FontFlags = FontFlags
 
 local function abbreviate(text)
 	local b = text:byte(1)

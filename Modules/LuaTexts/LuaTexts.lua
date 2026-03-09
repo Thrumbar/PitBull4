@@ -812,7 +812,7 @@ local function set_text(font_string, ...)
 	if not success then
 		pcall(geterrorhandler(),select(2,...))
 		font_string:SetText("{err}")
-		print("!!", font_string.frame.layout, font_string.luatexts_name)
+		-- print("!!", font_string.frame.layout, font_string.luatexts_name)
 	elseif select('#',...) > 1 and select(2,...) ~= nil then
 		local success, err = pcall(font_string.SetFormattedText,font_string,select(2,...))
 		if not success then
@@ -839,10 +839,18 @@ local function set_font(font_string)
 end
 
 local function set_alpha(font_string)
-	local success, err = pcall(font_string.SetAlpha, font_string, PitBull4_LuaTexts.alpha)
-	if not success then
-		local output = "PitBull4_LuaTexts:"..font_string.frame.layout..":"..font_string.luatexts_name.." caused the following error when calling SetAlpha("..tostring(PitBull4_LuaTexts.alpha).."):\n"..err:gsub("'%?'","'SetAlpha)'")
-		pcall(geterrorhandler(),output)
+	if PitBull4_LuaTexts.secret_alpha ~= nil then
+		local success, err = pcall(font_string.SetAlphaFromBoolean, font_string, PitBull4_LuaTexts.secret_alpha, PitBull4_LuaTexts.secret_alpha_if_true, PitBull4_LuaTexts.secret_alpha_if_false)
+		if not success then
+			local output = "PitBull4_LuaTexts:"..font_string.frame.layout..":"..font_string.luatexts_name.." caused the following error when calling SetAlphaFromBoolean():\n"..err:gsub("'%?'","'SetAlphaFromBoolean)'")
+			pcall(geterrorhandler(),output)
+		end
+	else
+		local success, err = pcall(font_string.SetAlpha, font_string, PitBull4_LuaTexts.alpha)
+		if not success then
+			local output = "PitBull4_LuaTexts:"..font_string.frame.layout..":"..font_string.luatexts_name.." caused the following error when calling SetAlpha("..tostring(PitBull4_LuaTexts.alpha).."):\n"..err:gsub("'%?'","'SetAlpha)'")
+			pcall(geterrorhandler(),output)
+		end
 	end
 end
 
@@ -891,6 +899,10 @@ local function update_text(font_string, event)
 	PitBull4_LuaTexts.alpha = 1
 	PitBull4_LuaTexts.outline = nil
 	PitBull4_LuaTexts.word_wrap = nil
+
+	PitBull4_LuaTexts.secret_alpha = nil
+	PitBull4_LuaTexts.secret_alpha_if_true = nil
+	PitBull4_LuaTexts.secret_alpha_if_false = nil
 
 	set_text(font_string, pcall(func,unit))
 	set_font(font_string)
