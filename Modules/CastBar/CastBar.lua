@@ -7,6 +7,9 @@ local EXAMPLE_ICON = 136222 -- Spell_Shadow_Teleport
 
 local PitBull4_CastBar = PitBull4:NewModule("CastBar")
 
+local new, del = PitBull4.new, PitBull4.del
+local EvaluateColorFromBoolean = C_CurveUtil.EvaluateColorFromBoolean
+
 PitBull4_CastBar:SetModuleType("secret_bar")
 PitBull4_CastBar:SetName(L["Cast bar"])
 PitBull4_CastBar:SetDescription(L["Show a cast bar."])
@@ -25,16 +28,33 @@ PitBull4_CastBar:SetDefaults({
 	channel_uninterruptible_color = { 96/255, 180/255, 211/255 },
 })
 
+local unit_cast_ids = {}
 local cast_data = {}
-PitBull4_CastBar.cast_data = cast_data
 
 local timer_frame = CreateFrame("Frame")
 timer_frame:Hide()
-timer_frame:SetScript("OnUpdate", function()
-	PitBull4_CastBar:FixCastData()
-	PitBull4_CastBar:UpdateAll()
-end)
+timer_frame:SetScript("OnUpdate", function(self)
+	local current_time = GetTime()
+	for cast_id, data in next, cast_data do
+		if
+			(data.stop_time and (data.stop_time - current_time + 1 <= 0)) or
+			(not data.stop_time and not data.casting and not data.channeling)
+		then
+			cast_data[cast_id] = del(data)
+		end
+	end
 
+	for frame in PitBull4:IterateFrames() do
+		if unit_cast_ids[frame.unit] then
+			PitBull4_CastBar:Update(frame)
+		end
+	end
+
+	if not next(cast_data) then
+		wipe(unit_cast_ids)
+		self:Hide()
+	end
+end)
 
 local casting_interruptible_color = CreateColor()
 local casting_uninterruptible_color = CreateColor()
@@ -52,57 +72,78 @@ end
 function PitBull4_CastBar:OnEnable()
 	update_colors()
 
-	self:RegisterEvent("UNIT_SPELLCAST_START", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_START", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_STOP", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_STOP", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_DELAYED", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_UPDATE", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_FAILED", "UpdateInfo")
-	self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED", "UpdateInfo")
+	self:RegisterEvent("UNIT_SPELLCAST_START")
+	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_START")
+	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_START", "UNIT_SPELLCAST_START")
+
+	self:RegisterEvent("UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_START")
+	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_START")
+	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_UPDATE", "UNIT_SPELLCAST_START")
+
+	self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", "UNIT_SPELLCAST_START")
+	self:RegisterEvent("UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_START")
+	self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+	self:RegisterEvent("UNIT_SPELLCAST_EMPOWER_STOP")
+
+	self:RegisterEvent("UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_START")
+	self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP")
+
 	self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE", "UpdateInfo")
 	self:RegisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE", "UpdateInfo")
 
 	self:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
+	self:RegisterEvent("PLAYER_TARGET_CHANGED")
+	self:RegisterEvent("PLAYER_FOCUS_CHANGED")
+
+	self:UpdateAll()
 end
 
 function PitBull4_CastBar:OnDisable()
 	timer_frame:Hide()
 end
 
-local new, del
-do
-	local pool = setmetatable({}, {__mode='k'})
-	function new()
-		local t = next(pool)
-		if t then
-			pool[t] = nil
-			return t
-		end
+function PitBull4_CastBar:UNIT_SPELLCAST_START(event, unit, _, _, cast_id)
+	self:UpdateInfo(event, unit, cast_id)
+end
 
-		return {}
-	end
-	function del(t)
-		wipe(t)
-		pool[t] = true
+function PitBull4_CastBar:UNIT_SPELLCAST_CHANNEL_STOP(event, unit, _, _, interrupted_by, cast_id)
+	self:UpdateInfo(event, unit, cast_id, interrupted_by)
+end
+
+function PitBull4_CastBar:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, _, _, _, interrupted_by, cast_id)
+	self:UpdateInfo(event, unit, cast_id, interrupted_by)
+end
+
+function PitBull4_CastBar:INSTANCE_ENCOUNTER_ENGAGE_UNIT(event)
+	for i = 1, 8 do
+		local unit = ("boss%d"):format(i)
+		unit_cast_ids[unit] = nil
+		self:UpdateInfo(event, unit)
 	end
 end
 
-local last = 0
+function PitBull4_CastBar:PLAYER_TARGET_CHANGED()
+	unit_cast_ids.target = nil
+	self:UpdateForUnitID("target")
+end
+
+function PitBull4_CastBar:PLAYER_FOCUS_CHANGED()
+	unit_cast_ids.focus = nil
+	self:UpdateForUnitID("focus")
+end
+
+
+
 function PitBull4_CastBar:GetValue(frame)
 	local unit = frame.unit
 	if unit:match("%wtarget$") then
 		return nil
 	end
 
-	local data = cast_data[unit]
+	local data = cast_data[unit_cast_ids[unit]]
 	if not data then
 		self:UpdateInfo(nil, unit)
-		data = cast_data[unit]
+		data = cast_data[unit_cast_ids[unit]]
 	end
 
 	local db = self:GetLayoutDB(frame)
@@ -115,7 +156,7 @@ function PitBull4_CastBar:GetValue(frame)
 
 	local icon = db.show_icon and data.icon or nil
 
-	if data.casting or data.channeling or data.empowering then
+	if data.casting or data.channeling then
 		if data.direction == Enum.StatusBarTimerDirection.RemainingTime then
 			return data.duration:GetRemainingPercent(), nil, icon
 		end
@@ -129,32 +170,25 @@ function PitBull4_CastBar:GetValue(frame)
 	end
 	return 0, nil, icon
 end
-
 function PitBull4_CastBar:GetExampleValue(frame)
 	local db = self:GetLayoutDB(frame)
 	return EXAMPLE_VALUE, nil, db.show_icon and EXAMPLE_ICON or nil
 end
 
 function PitBull4_CastBar:GetColor(frame, value)
-	local data = cast_data[frame.unit]
+	local data = cast_data[unit_cast_ids[frame.unit]]
 	if not data then
 		return 0, 0, 0, 0
 	end
 
 	if data.casting then
-		local color = C_CurveUtil.EvaluateColorFromBoolean(data.uninterruptible, casting_uninterruptible_color, casting_interruptible_color)
+		local color = EvaluateColorFromBoolean(data.uninterruptible, casting_uninterruptible_color, casting_interruptible_color)
 		return color:GetRGBA()
 	elseif data.channeling then
-		local color = C_CurveUtil.EvaluateColorFromBoolean(data.uninterruptible, channel_uninterruptible_color, channel_interruptible_color)
+		local color = EvaluateColorFromBoolean(data.uninterruptible, channel_uninterruptible_color, channel_interruptible_color)
 		return color:GetRGBA()
-	elseif data.fade_out then
-		local alpha, r, g, b
-		local stop_time = data.stop_time
-		if stop_time then
-			alpha = stop_time - GetTime() + 1
-		else
-			alpha = 0
-		end
+	elseif data.stop_time then
+		local alpha = data.stop_time - GetTime() + 1
 		if alpha >= 1 then
 			alpha = 1
 		end
@@ -162,14 +196,15 @@ function PitBull4_CastBar:GetColor(frame, value)
 			return 0, 0, 0, 0
 		else
 			-- Decide which color to use
-			if not data.was_channeling then -- Last cast was a normal one...
+			local r, g, b
+			if not data.was_channeling then -- Last cast was normal
 				if data.failed then
 					r, g, b = unpack(self.db.profile.global.casting_failed_color)
 				else
 					r, g, b = unpack(self.db.profile.global.casting_complete_color)
 				end
-			else -- Last cast was a channel...
-				local color = C_CurveUtil.EvaluateColorFromBoolean(data.uninterruptible, channel_uninterruptible_color, channel_interruptible_color)
+			else -- Last cast channeled
+				local color = EvaluateColorFromBoolean(data.uninterruptible, channel_uninterruptible_color, channel_interruptible_color)
 				r, g, b = color:GetRGB()
 			end
 			return r, g, b, alpha
@@ -179,27 +214,14 @@ function PitBull4_CastBar:GetColor(frame, value)
 end
 
 function PitBull4_CastBar:GetBackgroundColor(frame)
-	local data = cast_data[frame.unit]
-
+	local data = cast_data[unit_cast_ids[frame.unit]]
 	if not data then
 		if not self:GetLayoutDB(frame).idle_background then
 			return nil, nil, nil, 0
 		end
-	elseif data.fade_out then
-		local alpha
-		local stop_time = data.stop_time
-		if stop_time then
-			alpha = stop_time - GetTime() + 1
-		else
-			alpha = 0
-		end
-		if alpha >= 1 then
-			alpha = 1
-		end
-		if alpha <= 0 then
-			alpha = 0
-		end
-		return nil, nil, nil, alpha
+	elseif data.stop_time then
+		local alpha = data.stop_time - GetTime() + 1
+		return nil, nil, nil, Saturate(alpha)
 	end
 end
 
@@ -207,64 +229,65 @@ function PitBull4_CastBar:GetExampleColor(frame)
 	return 0, 1, 0, 1
 end
 
-function PitBull4_CastBar:UpdateInfo(event, unit, _, _, ...)
-	local data = cast_data[unit]
-	if not data then
-		data = new()
-		cast_data[unit] = data
-	end
 
-	local spell, text, icon, _, _, _, _, uninterruptible, spell_id, cast_id = UnitCastingInfo(unit)
-	local channeling, empowering = false, false
+function PitBull4_CastBar:UpdateInfo(event, unit, event_cast_id, interrupted_by)
+	local spell, _, icon, _, _, _, _, uninterruptible, _, cast_id = UnitCastingInfo(unit)
+	local channeling = false
 	local direction, duration = Enum.StatusBarTimerDirection.ElapsedTime
 	if spell then
 		duration = UnitCastingDuration(unit)
 	else
 		local is_empowered
-		spell, text, icon, _, _, _, uninterruptible, spell_id, is_empowered, _, cast_id = UnitChannelInfo(unit)
+		spell, _, icon, _, _, _, uninterruptible, _, is_empowered, _, cast_id = UnitChannelInfo(unit)
 		if is_empowered then
-			empowering = true
+			channeling = true
 			duration = UnitEmpoweredChannelDuration(unit)
-		else
+		elseif spell then
 			channeling = true
 			duration = UnitChannelDuration(unit)
 			direction = Enum.StatusBarTimerDirection.RemainingTime
 		end
 	end
 
-	local event_cast_id, interrupted_by
-	if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
-		interrupted_by, event_cast_id = ...
-	elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
-		_, interrupted_by, event_cast_id = ...
-	else
-		event_cast_id = ...
+	local id = cast_id or event_cast_id
+	if not id then
+		return
+	end
+	unit_cast_ids[unit] = id
+
+	local data = cast_data[id]
+	if not data then
+		data = new()
+		cast_data[id] = data
 	end
 
-	if data.cast_id == event_cast_id then
+	if cast_id == event_cast_id then
 		if interrupted_by or event == "UNIT_SPELLCAST_FAILED" or event == "UNIT_SPELLCAST_INTERRUPTED"  then
 			data.failed = true
 			data.interrupted_by = interrupted_by
+		end
+		if event == "UNIT_SPELLCAST_SUCCEEDED" then
+		-- This is necessary because if the interrupt happens just as the cast finishes
+		-- it can look to the client like it failed but the server sends the success
+		-- message after.
+			data.failed = false
 		end
 	end
 
 	-- casting
 	if spell then
-		data.spell = text
+		data.spell = spell
 		data.icon = icon
 		data.duration = duration
 		data.direction = direction
 
 		data.casting = not channeling
 		data.channeling = channeling
-		data.empowering = empowering
 		data.uninterruptible = uninterruptible
 		data.was_channeling = channeling -- persistent state even after interrupted
 
-		data.spell_id = spell_id
 		data.cast_id = cast_id
 
-		data.fade_out = false
 		data.stop_time = nil
 		data.stop_value = nil
 
@@ -274,26 +297,12 @@ function PitBull4_CastBar:UpdateInfo(event, unit, _, _, ...)
 
 	-- not casting
 	if not data.spell then
-		cast_data[unit] = del(data)
-		if not next(cast_data) then
-			timer_frame:Hide()
-		end
+		cast_data[id] = del(data)
 		return
-	end
-
-	if data.cast_id == event_cast_id then
-		if event == "UNIT_SPELLCAST_SUCCEEDED" then
-		-- This is necessary because if the interrupt happens just as the cast finishes
-		-- it can look to the client like it failed but the server sends the success
-		-- message after.
-			data.failed = false
-		end
 	end
 
 	data.casting = false
 	data.channeling = false
-	data.empowering = false
-	data.fade_out = true
 	if not data.stop_time then
 		data.stop_time = GetTime()
 		if data.direction == Enum.StatusBarTimerDirection.RemainingTime then
@@ -304,80 +313,34 @@ function PitBull4_CastBar:UpdateInfo(event, unit, _, _, ...)
 	end
 end
 
-local tmp = {}
-function PitBull4_CastBar:FixCastData()
-	local frame
-	local current_time = GetTime()
-	for unit, data in pairs(cast_data) do
-		tmp[unit] = data
-	end
-	for unit, data in pairs(tmp) do
-		local found = false
-		for frame in PitBull4:IterateFramesForUnitID(unit) do
-			if self:GetLayoutDB(frame).enabled then
-				found = true
-				if data.fade_out then
-					local alpha = 0
-					local stop_time = data.stop_time
-					if stop_time then
-						alpha = stop_time - current_time + 1
-					end
-					if alpha <= 0 then
-						cast_data[unit] = del(data)
-						self:UpdateForUnitID(unit)
-					end
-				elseif not data.casting and not data.channeling and not data.empowering then
-					cast_data[unit] = del(data)
-					self:UpdateForUnitID(unit)
-				end
-				break
-			end
-		end
-		if not found then
-			cast_data[unit] = del(data)
-		end
-	end
-	if not next(cast_data) then
-		timer_frame:Hide()
-	end
-	wipe(tmp)
-end
-
-function PitBull4_CastBar:INSTANCE_ENCOUNTER_ENGAGE_UNIT(event)
-	for i = 1, 8 do
-		self:UpdateInfo(event, ("boss%d"):format(i))
-	end
-end
 
 PitBull4_CastBar:SetLayoutOptionsFunction(function(self)
-	return 'auto_hide', {
+	return "auto_hide", {
 		name = L["Auto-hide"],
 		desc = L["Automatically hide the cast bar when not casting."],
-		type = 'toggle',
+		type = "toggle",
 		get = function(info)
 			return PitBull4.Options.GetLayoutDB(self).auto_hide
 		end,
 		set = function(info, value)
 			PitBull4.Options.GetLayoutDB(self).auto_hide = value
-
 			PitBull4.Options.UpdateFrames()
 		end,
-	}, 'show_icon', {
+	}, "show_icon", {
 		name = L["Show icon"],
 		desc = L["Whether to show the icon that is being cast."],
-		type = 'toggle',
+		type = "toggle",
 		get = function(info)
 			return PitBull4.Options.GetLayoutDB(self).show_icon
 		end,
 		set = function(info, value)
 			PitBull4.Options.GetLayoutDB(self).show_icon = value
-
 			PitBull4.Options.RefreshFrameLayouts()
 		end,
-	}, 'icon_on_left', {
+	}, "icon_on_left", {
 		name = L["Icon position"],
 		desc = L["What side of the bar to show the icon on."],
-		type = 'select',
+		type = "select",
 		values = function(info)
 			local db = PitBull4.Options.GetLayoutDB(self)
 			local icon_on_left = db.icon_on_left
@@ -415,23 +378,21 @@ PitBull4_CastBar:SetLayoutOptionsFunction(function(self)
 		end,
 		set = function(info, value)
 			PitBull4.Options.GetLayoutDB(self).icon_on_left = (value == "left")
-
 			PitBull4.Options.RefreshFrameLayouts()
 		end,
 		hidden = function(info)
 			return not PitBull4.Options.GetLayoutDB(self).show_icon
 		end
-	}, 'idle_background', {
+	}, "idle_background", {
 		name = L["Idle background"],
 		desc = L["Show background on the cast bar when nothing is being cast."],
-		type = 'toggle',
+		type = "toggle",
 		get = function(info)
 			local db = PitBull4.Options.GetLayoutDB(self)
 			return db.idle_background and not db.auto_hide
 		end,
 		set = function(info, value)
 			PitBull4.Options.GetLayoutDB(self).idle_background = value
-
 			PitBull4.Options.RefreshFrameLayouts()
 		end,
 		disabled = function(info)
@@ -441,13 +402,13 @@ PitBull4_CastBar:SetLayoutOptionsFunction(function(self)
 end)
 
 PitBull4_CastBar:SetColorOptionsFunction(function(self)
-	return 'casting', {
-		type = 'group',
+	return "casting", {
+		type = "group",
 		name = L["Casting"],
 		inline = true,
 		args = {
 			casting_interruptible_color = {
-				type = 'color',
+				type = "color",
 				name = L["Interruptible"],
 				desc = L["Sets which color to use on casting bar of casts that are interruptible."],
 				get = function(info)
@@ -461,7 +422,7 @@ PitBull4_CastBar:SetColorOptionsFunction(function(self)
 				order = 1,
 			},
 			casting_uninterruptible_color = {
-				type = 'color',
+				type = "color",
 				name = L["Uninterruptible"],
 				desc = L["Sets which color to use on casting bar of casts that are not interruptible."],
 				get = function(info)
@@ -475,7 +436,7 @@ PitBull4_CastBar:SetColorOptionsFunction(function(self)
 				order = 2,
 			},
 			casting_complete_color = {
-				type = 'color',
+				type = "color",
 				name = L["Complete"],
 				desc = L["Sets which color to use on casting bar of casts that completed."],
 				get = function(info)
@@ -488,7 +449,7 @@ PitBull4_CastBar:SetColorOptionsFunction(function(self)
 				order = 3,
 			},
 			casting_failed_color = {
-				type = 'color',
+				type = "color",
 				name = L["Failed"],
 				desc = L["Sets which color to use on casting bar of casts that failed."],
 				get = function(info)
@@ -501,13 +462,13 @@ PitBull4_CastBar:SetColorOptionsFunction(function(self)
 				order = 4,
 			},
 		},
-	}, 'channeling', {
-		type = 'group',
+	}, "channeling", {
+		type = "group",
 		name = L["Channeling"],
 		inline = true,
 		args = {
 			channel_interruptible_color = {
-				type = 'color',
+				type = "color",
 				name = L["Interruptible"],
 				desc = L["Sets which color to use on casting bar of channeled casts that are interruptible."],
 				get = function(info)
@@ -521,7 +482,7 @@ PitBull4_CastBar:SetColorOptionsFunction(function(self)
 				order = 1,
 			},
 			channel_uninterruptible_color = {
-				type = 'color',
+				type = "color",
 				name = L["Uninterruptible"],
 				desc = L["Sets which color to use on casting bar of channeled casts that are not interruptible."],
 				get = function(info)

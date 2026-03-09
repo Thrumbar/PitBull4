@@ -17,6 +17,7 @@ local mouseover_check_cache = PitBull4_LuaTexts.mouseover_check_cache
 local spell_cast_cache = PitBull4_LuaTexts.spell_cast_cache
 local power_cache = PitBull4_LuaTexts.power_cache
 local hp_cache = PitBull4_LuaTexts.hp_cache
+local unit_cast_ids = PitBull4_LuaTexts.unit_cast_ids
 local cast_data = PitBull4_LuaTexts.cast_data
 local to_update = PitBull4_LuaTexts.to_update
 local afk_cache = PitBull4_LuaTexts.afk_cache
@@ -875,7 +876,7 @@ ScriptEnv.ThreatStatusColor = ThreatStatusColor
 
 local function CastData(unit)
 	spell_cast_cache[ScriptEnv.font_string] = true
-	return cast_data[unit]
+	return cast_data[unit_cast_ids[unit]]
 end
 ScriptEnv.CastData = CastData
 

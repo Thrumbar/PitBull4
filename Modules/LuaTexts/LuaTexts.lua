@@ -3,6 +3,7 @@ local L = PitBull4.L
 
 local PitBull4_LuaTexts = PitBull4:NewModule("LuaTexts", "AceHook-3.0")
 
+local new, del = PitBull4.new, PitBull4.del
 local InChatMessagingLockdown = C_ChatInfo.InChatMessagingLockdown
 local ShouldUnitComparisonBeSecret = C_Secrets.ShouldUnitComparisonBeSecret
 
@@ -20,6 +21,8 @@ local mouseover_check_cache = {}
 PitBull4_LuaTexts.mouseover_check_cache = mouseover_check_cache
 local spell_cast_cache = {}
 PitBull4_LuaTexts.spell_cast_cache = spell_cast_cache
+local unit_cast_ids = {}
+PitBull4_LuaTexts.unit_cast_ids = unit_cast_ids
 local cast_data = {}
 PitBull4_LuaTexts.cast_data = cast_data
 local to_update = {}
@@ -640,8 +643,11 @@ end
 -- for things that cannot be cleaned on an as needed basis and
 -- require very little actual processing time.
 local protected_events = {
-	['UNIT_SPELLCAST_SENT'] = true,
-	['GROUP_ROSTER_UPDATE'] = true,
+	["UNIT_SPELLCAST_SENT"] = true,
+	["GROUP_ROSTER_UPDATE"] = true,
+	["PLAYER_TARGET_CHANGED"] = true,
+	["PLAYER_FOCUS_CHANGED"] = true,
+	["INSTANCE_ENCOUNTER_ENGAGE_UNIT"] = true
 }
 
 -- Provide a way to update changed events so existing LuaTexts configs
@@ -779,8 +785,11 @@ end
 function PitBull4_LuaTexts:OnEnable()
 	-- UNIT_SPELLCAST_SENT has to always be registered so we can capture
 	-- additional data not always available.
-	self:RegisterEvent("UNIT_SPELLCAST_SENT")
+	-- self:RegisterUnitEvent("UNIT_SPELLCAST_SENT", nil, "player")
 	self:RegisterEvent("GROUP_ROSTER_UPDATE")
+	self:RegisterEvent("PLAYER_TARGET_CHANGED")
+	self:RegisterEvent("PLAYER_FOCUS_CHANGED")
+	self:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
 
 	-- Hooks to trap OnEnter/OnLeave for the frames.
 	self:AddFrameScriptHook("OnEnter")
@@ -889,32 +898,14 @@ local function update_text(font_string, event)
 	font_string:SetWordWrap(not not PitBull4_LuaTexts.word_wrap)
 end
 
-local next_spell, next_target
-function PitBull4_LuaTexts:UNIT_SPELLCAST_SENT(event, unit, target, cast_id, spell_id)
-	if unit ~= "player" then return end
-
-	next_spell = spell_id
-	next_target = target
-
-	self:OnEvent(event, unit, cast_id, spell_id)
-end
-
-local pool = setmetatable({}, {__mode='k'})
-local function new()
-	local t = next(pool)
-	if t then
-		pool[t] = nil
-	else
-		t = {}
-	end
-	return t
-end
-
-local function del(t)
-	wipe(t)
-	pool[t] = true
-	return nil
-end
+-- local next_spell, next_target
+-- function PitBull4_LuaTexts:UNIT_SPELLCAST_SENT(event, unit, target, _, spell_id)
+-- 	if not issecretvalue(target) then
+-- 		next_spell = spell_id
+-- 		next_target = target
+-- 		self:OnEvent(event, unit)
+-- 	end
+-- end
 
 local function copy(t)
 	local n = {}
@@ -924,98 +915,74 @@ local function copy(t)
 	return n
 end
 
-local function update_cast_data(event, unit, _, _, ...)
-	local data = cast_data[unit]
-	if not data then
-		data = new()
-		cast_data[unit] = data
-	end
-
-	local spell, text, _, start_time, end_time, _, _, uninterruptible, spell_id, cast_id = UnitCastingInfo(unit)
+local function update_cast_data(event, unit, event_cast_id, interrupted_by)
+	local spell, _, _, _, _, _, _, uninterruptible, _, cast_id, delay = UnitCastingInfo(unit)
 	local channeling = false
-	local empowering = false
 	local duration
 	if spell then
 		duration = UnitCastingDuration(unit)
 	else
 		local is_empowered
-		spell, text, _, start_time, end_time, _, uninterruptible, spell_id, is_empowered, _, cast_id  = UnitChannelInfo(unit)
+		spell, _, _, _, _, _, uninterruptible, _, is_empowered, _, cast_id  = UnitChannelInfo(unit)
 		if is_empowered then
-			empowering = true
+			channeling = true
 			duration = UnitEmpoweredChannelDuration(unit)
-		else
+		elseif spell then
 			channeling = true
 			duration = UnitChannelDuration(unit)
 		end
 	end
 
-	local event_cast_id, interrupted_by
-	if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
-		interrupted_by, event_cast_id = ...
-	elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
-		_, interrupted_by, event_cast_id = ...
-	else
-		event_cast_id = ...
+	local id = cast_id or event_cast_id
+	if not id then
+		return
 	end
-	if data.cast_id == event_cast_id then
-		if interrupted_by  then
-			data.interrupted_by = interrupted_by
-		end
-		-- The event was for the cast we're current casting
-		if event == "UNIT_SELLCAST_FAILED" then
-			data.stop_message = _G.FAILED
-		elseif event == "UNIT_SPELLCAST_INTERRUPTED" then
-			data.stop_message = _G.INTERRUPTED
-		elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
-			-- Sometimes the interrupt event happens just before the
-			-- success event so clear the stop_message if we get succeded.
-			data.stop_message = nil
-		end
+	unit_cast_ids[unit] = id
+
+	local data = cast_data[id]
+	if not data then
+		data = new()
+		cast_data[id] = data
+	end
+
+	if interrupted_by then
+		data.interrupted_by = interrupted_by
+	end
+	if event == "UNIT_SELLCAST_FAILED" then
+		data.stop_message = _G.FAILED
+	elseif event == "UNIT_SPELLCAST_INTERRUPTED" or interrupted_by then
+		data.stop_message = _G.INTERRUPTED
+	elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+		-- Sometimes the interrupt event happens just before the
+		-- success event so clear the stop_message if we get succeded.
+		data.stop_message = nil
 	end
 
 	if spell then
-		data.spell = text
+		data.spell = spell
 		data.duration = duration
-		if unit == "player" then
-			local old_start = data.start_time
-			data.start_time = start_time * 0.001
-			if empowering then
-				data.end_time = (end_time + GetUnitEmpowerHoldAtMaxTime(unit)) * 0.001
-			else
-				data.end_time = end_time * 0.001
-			end
-			if event == "UNIT_SPELLCAST_DELAYED" or event == "UNIT_SPELLCAST_CHANNEL_UPDATE" then
-				if channeling then
-					data.delay = (data.delay or 0) + ((old_start or start_time) - start_time)
-				else
-					data.delay = (data.delay or 0) + (start_time - (old_start or start_time))
-				end
-			elseif event then
-				data.delay = 0
-			end
-			if spell_id == next_spell then
-				data.target = next_target
-			end
-		end
+		-- if unit == "player" and spell_id == next_spell then
+		-- 	data.target = next_target
+		-- end
+
 		data.casting = not channeling
 		data.channeling = channeling
-		data.empowering = empowering
 		data.uninterruptible = uninterruptible
-		data.fade_out = false
-		data.cast_id = cast_id
-		-- data.stop_time = nil
+
+		data.delay = delay or 0
+		data.cast_id = id
+
+		data.stop_time = nil
 		-- data.stop_message = nil
 		return
 	end
 	if not data.spell then
-		cast_data[unit] = del(data)
+		cast_data[id] = del(data)
 		return
 	end
 
 	data.casting = false
 	data.channeling = false
-	data.empowering = false
-	data.fade_out = true
 	if not data.stop_time then
 		data.stop_time = GetTime()
 	end
@@ -1024,34 +991,57 @@ end
 local tmp = {}
 local function fix_cast_data()
 	local current_time = GetTime()
-	for unit, data in pairs(cast_data) do
-		tmp[unit] = data
+	for cast_id in next, cast_data do
+		tmp[#tmp + 1] = cast_id
 	end
-	for unit, data in pairs(tmp) do
-		if data.fade_out then
-			local alpha = 0
-			local stop_time = data.stop_time
-			if stop_time then
-				alpha = stop_time - current_time + 1
+
+	for _, cast_id in next, tmp do
+		local data = cast_data[cast_id]
+		if data.stop_time then
+			if data.stop_time - current_time + 1 <= 0 then
+				cast_data[cast_id] = del(data)
 			end
-			if alpha <0 then
-				cast_data[unit] = del(data)
-			end
-		elseif not data.casting and not data.channeling and not data.empowering then
-			cast_data[unit] = del(data)
+		elseif not data.casting and not data.channeling then
+			cast_data[cast_id] = del(data)
 		end
-		local found = false
-		for font_string in pairs(spell_cast_cache) do
-			if unit == font_string.frame.unit then
-				found = true
-				to_update[font_string] = 0 -- update now
-			end
-		end
-		if not found and cast_data[unit] then
-			cast_data[unit] = del(data)
-		end
+
+		-- local found = false
+		-- for font_string in pairs(spell_cast_cache) do
+		-- 	if unit == font_string.frame.unit then
+		-- 		found = true
+		-- 		to_update[font_string] = 0 -- update now
+		-- 	end
+		-- end
+		-- if not found and cast_data[cast_id] then
+		-- 	cast_data[cast_id] = del(data)
+		-- end
+	end
+
+	for font_string in next, spell_cast_cache do
+		to_update[font_string] = 0
+	end
+
+	if not next(cast_data) then
+		wipe(unit_cast_ids)
 	end
 	wipe(tmp)
+end
+
+function PitBull4_LuaTexts:PLAYER_TARGET_CHANGED(event)
+	update_cast_data(nil, "target")
+	self:OnEvent(event)
+end
+
+function PitBull4_LuaTexts:PLAYER_FOCUS_CHANGED(event)
+	update_cast_data(nil, "focus")
+	self:OnEvent(event)
+end
+
+function PitBull4_LuaTexts:INSTANCE_ENCOUNTER_ENGAGE_UNIT(event)
+	for i = 1, 8 do
+		update_cast_data(nil, ("boss%d"):format(i))
+	end
+	self:OnEvent(event)
 end
 
 local function compare_units(unit_a, unit_b)
@@ -1213,7 +1203,15 @@ function PitBull4_LuaTexts:OnEvent(event, unit, ...)
 		update_timers()
 	elseif string.sub(event,1,15) == "UNIT_SPELLCAST_" and event ~= "UNIT_SPELLCAST_SENT" then
 		-- spell casting events need to go through
-		update_cast_data(event, unit, ...)
+		local _, interrupted_by, cast_id
+		if event == "UNIT_SPELLCAST_CHANNEL_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
+			_, _, interrupted_by, cast_id = ...
+		elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
+			_, _, _, interrupted_by, cast_id = ...
+		else
+			_, _, cast_id = ...
+		end
+		update_cast_data(event, unit, cast_id, interrupted_by)
 	end
 
 	for font_string in pairs(event_entry) do
