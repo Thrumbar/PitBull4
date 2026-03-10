@@ -82,7 +82,7 @@ function PitBull4_Aura:HighlightFilter(db, entry, frame)
 		local filter_name = highlight_filters[id]
 		if filter_name and filter_name ~= "" then
 			local filter = self:GetFilterDB(filter_name)
-			if filter then
+			if filter and not issecretvalue(entry.name) then
 				-- Run the filter and capture the result
 				local filter_func = self.filter_types[filter.filter_type].filter_func
 				local filter_result = filter_func(filter_name, entry, frame)

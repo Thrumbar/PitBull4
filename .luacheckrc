@@ -81,6 +81,7 @@ globals = {
 	"C_ChatInfo",
 	"C_CreatureInfo",
 	"C_CurveUtil",
+	"C_DurationUtil",
 	"C_GossipInfo",
 	"C_IncomingSummon",
 	"C_Item",

@@ -3,6 +3,8 @@ local PitBull4 = _G.PitBull4
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
+PitBull4_Aura.DEFAULT_SKIN = "Blizzard Modern"
+
 local MSQ = LibStub("Masque", true)
 
 -- Called from UpdateFrame to set the layout group and catch layout changes
@@ -40,18 +42,18 @@ if MSQ then
 	-- Add skins similar to what PitBull uses without Masque.
 	-- Too bad you can't set a default skin when registering a group :|
 	MSQ:AddSkin("PitBull", {
-		Template = "Blizzard",
+		Template = "Blizzard Modern",
 		Backdrop = { Hide = true },
 		Icon = { TexCoords = {0, 1, 0, 1} },
 		Normal = { Hide = true },
-		Border = { Texture = [[Interface\AddOns\PitBull4\Modules\Aura\border]], BlendMode = "BLEND" },
+		Border = { Texture = [[Interface\AddOns\PitBull4\Modules\Aura\border]], BlendMode = "BLEND", Width = 36, Height = 36 },
 		Cooldown = { Width = 36, Height = 36 },
 	})
 	MSQ:AddSkin("PitBull Zoomed", {
 		Template = "Zoomed",
 		Backdrop = { Hide = true },
 		Icon = { TexCoords = {0.07, 0.93, 0.07, 0.93} },
-		Border = { Texture = [[Interface\AddOns\PitBull4\Modules\Aura\border]], BlendMode = "BLEND" },
+		Border = { Texture = [[Interface\AddOns\PitBull4\Modules\Aura\border]], BlendMode = "BLEND", Width = 36, Height = 36 },
 	})
 
 	PitBull4_Aura.OnProfileChanged_funcs[#PitBull4_Aura.OnProfileChanged_funcs+1] = PitBull4_Aura.UpdateSkins

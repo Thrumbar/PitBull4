@@ -21,51 +21,10 @@ end
 
 
 -- Update handler for tooltips.
--- Not in the Aura table since it is only active when the
--- tooltip is displayed.
-local last_aura_OnUpdate = 0
-local function OnUpdate(self, elapsed)
-	last_aura_OnUpdate = last_aura_OnUpdate + elapsed
-	if last_aura_OnUpdate < 0.2 then return end
-	last_aura_OnUpdate = 0
-
-	local id = self.id
-	if id > 0 then
+function Aura:UpdateTooltip()
+	if self.id then
 		-- Real Buffs
-		local unit = self:GetUnit()
-		local filter = self.is_buff and "HELPFUL" or "HARMFUL"
-		-- Check that the cached id is still refrencing the same aura.
-		-- If not walk the aura tree to find one of the same name so the
-		-- tooltip will match.  UNIT_AURA events are not fired when the
-		-- unit goes out of range but the order of the auras by index change.
-		-- For a more detailed explanation for why this silly hack is necessary see:
-		-- https://www.wowace.com/projects/pitbull-unit-frames-4-0/issues/532
-		local auraData = C_UnitAuras.GetAuraDataByIndex(unit, id, filter)
-		if not auraData or auraData.name ~= self.name then
-			local i = 1
-			while true do
-				auraData = C_UnitAuras.GetAuraDataByIndex(unit, i, filter)
-				if not auraData then
-					-- Couldn't find a matching aura so do nothing.
-					return
-				end
-				if auraData.name == self.name then
-					-- Use this id, it may not be the right one but if the name
-					-- doesn't match it means we're out of range of the unit so
-					-- it doesn't matter which one we use as long as it is the same
-					-- name to provide the proper tooltip.  Using the wrong one is
-					-- ok since when we're out of range the time left won't be
-					-- available anyway.  It may seem desireable to cache the
-					-- id on the aura frame so we don't have to redo this.  However,
-					-- if there are two of the same aura and we selected the wrong one
-					-- then the time left tooltip will be wrong when we move back in range.
-					id = i
-					break
-				end
-				i = i + 1
-			end
-		end
-		GameTooltip:SetUnitAura(unit, id, filter)
+		GameTooltip:SetUnitAuraByAuraInstanceID(self:GetUnit(), self.id)
 	elseif self.slot then
 		local has_item = GameTooltip:SetInventoryItem("player", self.slot)
 		if not has_item then
@@ -81,7 +40,7 @@ local function OnUpdate(self, elapsed)
 		-- because it needs to be in English for sorting and border
 		-- purposes.  However the debuff types still need to be in our
 		-- localization tables.  They are L["Poison"], L["Magic"],
-		-- L["Disease"], L["Enrage"]
+		-- L["Disease"], L["Enrage"], L["Bleed"]
 		GameTooltip:AddDoubleLine(self.name, self.debuff_type and L[self.debuff_type] or "", 1, 0.82, 0, 1, 0.82, 0)
 		GameTooltip:AddLine(L["Sample aura created by PitBull to allow you to see the results of your configuration easily."], 1, 1, 1, 1)
 		if self.is_mine then
@@ -97,7 +56,7 @@ end
 -- Not in the Aura table since it is only active on
 -- buff aura controls.
 local function OnClick(self)
-	if not self.is_buff or not UnitIsUnit("player",self:GetUnit()) then return end
+	if not self.is_buff or not "player" == self:GetUnit() then return end
 	local slot = self.slot
 	if InCombatLockdown() or slot then return end
 	if slot then
@@ -107,20 +66,19 @@ local function OnClick(self)
 			CancelItemTempEnchantment(2)
 		end
 	else
-		CancelUnitBuff("player", self.id)
+		CancelUnitBuff("player", self.index)
 	end
 end
 
 function Aura_scripts:OnEnter()
-	GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT")
-	last_aura_OnUpdate = 0
-	self:SetScript("OnUpdate", OnUpdate)
-	OnUpdate(self, 1)
+	if GameTooltip:IsForbidden() then return end
+	GameTooltip:SetOwner(self, "ANCHOR_BOTTOMRIGHT") -- self:IsAnchoringRestricted() and "ANCHOR_CURSOR" or
+	self:UpdateTooltip()
 end
 
 function Aura_scripts:OnLeave()
+	if GameTooltip:IsForbidden() then return end
 	GameTooltip:Hide()
-	self:SetScript("OnUpdate", nil)
 end
 
 -- Control for the Auras
@@ -142,6 +100,14 @@ PitBull4.Controls.MakeNewControlType("Aura", "Button", function(control)
 	border:SetAllPoints(control)
 	border:SetTexture(border_path)
 
+	local stealable = PitBull4.Controls.MakeTexture(control, "OVERLAY")
+	stealable:SetTexture([[Interface\TargetingFrame\UI-TargetingFrame-Stealable]])
+	stealable:SetPoint("TOPLEFT", -3, 3)
+	stealable:SetPoint("BOTTOMRIGHT", 3, -3)
+	stealable:SetBlendMode("ADD")
+	stealable:Hide()
+	control.stealable = stealable
+
 	local count_text = PitBull4.Controls.MakeFontString(overlay, "OVERLAY")
 	control.count_text = count_text
 	count_text:SetShadowColor(0, 0, 0, 1)
@@ -151,7 +117,10 @@ PitBull4.Controls.MakeNewControlType("Aura", "Button", function(control)
 	local cooldown = PitBull4.Controls.MakeCooldown(control)
 	control.cooldown = cooldown
 	cooldown:SetReverse(true)
+	-- cooldown:SetDrawBling(false)
+	cooldown:SetDrawEdge(false)
 	cooldown:SetHideCountdownNumbers(true)
+	-- cooldown:SetMinimumCountdownDuration(0)
 	cooldown:SetAllPoints(control)
 
 	-- Set the overlay above the cooldown spinner so the fonts will be over it.
@@ -169,6 +138,7 @@ PitBull4.Controls.MakeNewControlType("Aura", "Button", function(control)
 	for k,v in pairs(Aura_scripts) do
 		control:SetScript(k, v)
 	end
+
 end, function(control)
 	-- onRetrieve
 	-- It's important to note that you should never ever do something

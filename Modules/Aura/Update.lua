@@ -13,6 +13,10 @@ local GetItemQualityColor = C_Item.GetItemQualityColor
 -- and then sorting them.
 local list = {}
 
+-- constants for the slot ids
+local INVSLOT_MAINHAND = _G.INVSLOT_MAINHAND
+local INVSLOT_OFFHAND = _G.INVSLOT_OFFHAND
+
 -- Table we store the weapon enchant info in.
 -- This table is never cleared and entries are reused.
 -- The entry tables follow the same format as those used for the aura
@@ -23,11 +27,10 @@ local weapon_list = {}
 
 -- cache for weapon enchant durations
 -- contains the name of the enchant and the value of the duration
-local weapon_durations = {}
-
--- constants for the slot ids
-local INVSLOT_MAINHAND = _G.INVSLOT_MAINHAND
-local INVSLOT_OFFHAND = _G.INVSLOT_OFFHAND
+local weapon_durations = {
+	[INVSLOT_MAINHAND] = C_DurationUtil.CreateDuration(),
+	[INVSLOT_OFFHAND] = C_DurationUtil.CreateDuration(),
+}
 
 -- constants for building sample auras
 local sample_buff_icon   = [[Interface\Icons\Spell_ChargePositive]]
@@ -49,33 +52,35 @@ local my_units = {
 -- table of dispel types we can dispel
 local can_dispel = PitBull4_Aura.can_dispel.player
 
+-- color curve for the dispel type
+local dispel_color_curve = C_CurveUtil.CreateColorCurve()
+dispel_color_curve:SetType(Enum.LuaCurveType.Step)
+PitBull4_Aura.dispel_color_curve = dispel_color_curve
+
 -- Fills an array of arrays with the information about the auras
 local function get_aura_list(list, unit, db, is_buff, frame)
 	if not unit then return end
 	local filter = is_buff and "HELPFUL" or "HARMFUL"
+	local player_filter = filter .. "|PLAYER"
 	local id = 1
 	local index = 1
-	local set_consolidate = PitBull4.wow_expansion < LE_EXPANSION_LEGION
+	local set_consolidate = _G.UnitAuraBySlot and ClassicExpansionAtMost(LE_EXPANSION_WARLORDS_OF_DRAENOR)
 
 	-- Loop through the auras
-	while true do
-		local entry = C_UnitAuras.GetAuraDataByIndex(unit, id, filter)
-		if not entry then
-			-- No more auras, break the outer loop
-			break
-		end
+	local slots = {C_UnitAuras.GetAuraSlots(unit, filter)}
+	for i = 2, #slots do
+		local entry = C_UnitAuras.GetAuraDataBySlot(unit, slots[i])
+
 		list[index] = entry
 
 		entry.index = id
-
-		-- The enrage dispel type is "" instead of "Enrage"
-		if entry.dispelName == "" then
-			entry.dispelName = "Enrage"
-		end
+		entry.isPlayerAura = not C_UnitAuras.IsAuraFilteredOutByInstanceID(unit, entry.auraInstanceID, player_filter)
+		entry.isHelpfulAura = is_buff
+		entry.isHarmfulAura = not is_buff
 
 		-- Only available in the classic API z.z
 		if set_consolidate then
-			entry.shouldConsolidate = select(16, _G.UnitAura(unit, id, filter))
+			entry.shouldConsolidate = select(16, _G.UnitAuraBySlot(unit, slots[i]))
 		end
 
 		-- Pass the entry through to the Highlight system
@@ -100,6 +105,8 @@ local function get_aura_list(list, unit, db, is_buff, frame)
 
 	return list
 end
+
+local zero_duration = C_DurationUtil.CreateDuration()
 
 -- Fills up to the maximum number of auras with sample auras
 local function get_aura_list_sample(list, unit, max, db, is_buff, is_player)
@@ -132,6 +139,7 @@ local function get_aura_list_sample(list, unit, max, db, is_buff, is_player)
 			entry.name = L["Sample Weapon Enchant"]
 			entry.dispelName = nil -- no debuff type
 			entry.sourceUnit = "player" -- treat weapon enchants as yours
+			entry.isPlayerAura = true
 		elseif i == offhand then
 			entry.weaponEnchantSlot = INVSLOT_OFFHAND
 			local link = GetInventoryItemLink("player", INVSLOT_OFFHAND)
@@ -139,18 +147,22 @@ local function get_aura_list_sample(list, unit, max, db, is_buff, is_player)
 			entry.name = L["Sample Weapon Enchant"]
 			entry.dispelName = nil -- no debuff type
 			entry.sourceUnit = "player" -- treat weapon enchants as yours
+			entry.isPlayerAura = true
 		else
 			entry.weaponEnchantSlot = nil -- not a weapon enchant
 			entry.weaponEnchantQuality = nil -- no quality color
 			entry.name = is_buff and L["Sample Buff"] or L["Sample Debuff"]
 			entry.dispelName = sample_debuff_types[(i - 1) % #sample_debuff_types]
 			entry.sourceUnit = (i - num_entries < 5) and "player" or nil -- caster (show 4 player entries)
+			entry.isPlayerAura = entry.sourceUnit == "player"
 		end
 		entry.isHelpful = is_buff
+		entry.isHelpfulAura = is_buff
 		entry.isHarmful = not is_buff
+		entry.isHarmfulAura = not is_buff
 		entry.icon = is_buff and sample_buff_icon or sample_debuff_icon
 		entry.applications = i -- count set to index to make order show
-		entry.duration = 0
+		entry.duration = zero_duration
 		entry.expirationTime = 0
 		entry.isStealable = false
 		entry.nameplateShowPersonal = false
@@ -247,27 +259,24 @@ local function set_weapon_entry(list, is_enchant, time_left, expiration_time, co
 		return
 	end
 
-	-- Figure the duration by keeping track of the longest
-	-- time_left we've seen.
-	local duration = weapon_durations[name]
-	time_left = ceil(time_left / 1000)
-	if not duration or duration < time_left then
-		duration = time_left
-		weapon_durations[name] = duration
-	end
+	local duration = weapon_durations[slot]
+	duration:SetTimeSpan(GetTime(), expiration_time)
 
 	entry.index = 0 -- index 0 means PitBull generated aura
 	-- If there's no enchant set we set weaponEnchantSlot to nil
 	entry.weaponEnchantSlot = slot
 	entry.weaponEnchantQuality = quality
 	entry.isHelpful = true
+	entry.isHelpfulAura = true
 	entry.isHarmful = false
+	entry.isHarmfulAura = false
 	entry.name = name
 	entry.icon = texture
 	entry.applications = count
 	entry.dispelName = nil
 	entry.duration = duration
 	entry.expirationTime = expiration_time
+	entry.isPlayerAura = true
 	entry.sourceUnit = "player" -- treat weapon enchants as always yours
 	entry.isStealable = false
 	entry.nameplateShowPersonal = false
@@ -290,97 +299,97 @@ local function copy_weapon_entry(src, dst, slot)
 	dst[#dst + 1] = CopyTable(entry)
 end
 
-local aura_sort__is_friend
-local aura_sort__is_buff
+-- local aura_sort__is_friend
+-- local aura_sort__is_buff
 
-local function aura_sort(a, b)
-	if not a then
-		return false
-	elseif not b then
-		return true
-	end
+-- local function aura_sort(a, b)
+-- 	if not a then
+-- 		return false
+-- 	elseif not b then
+-- 		return true
+-- 	end
 
-	-- item buffs first
-	local a_slot, b_slot = a.weaponEnchantSlot, b.weaponEnchantSlot
-	if a_slot and not b_slot then
-		return true
-	elseif not a_slot and b_slot then
-		return false
-	elseif a_slot and b_slot then
-		return a_slot < b_slot
-	end
+-- 	-- item buffs first
+-- 	local a_slot, b_slot = a.weaponEnchantSlot, b.weaponEnchantSlot
+-- 	if a_slot and not b_slot then
+-- 		return true
+-- 	elseif not a_slot and b_slot then
+-- 		return false
+-- 	elseif a_slot and b_slot then
+-- 		return a_slot < b_slot
+-- 	end
 
-	-- show your own auras first
-	local a_mine, b_mine=  my_units[a.sourceUnit], my_units[b.sourceUnit]
-	if a_mine ~= b_mine then
-		if a_mine then
-			return true
-		elseif b_mine then
-			return false
-		end
-	end
+-- 	-- show your own auras first
+-- 	local a_mine, b_mine=  my_units[a.sourceUnit], my_units[b.sourceUnit]
+-- 	if a_mine ~= b_mine then
+-- 		if a_mine then
+-- 			return true
+-- 		elseif b_mine then
+-- 			return false
+-- 		end
+-- 	end
 
-	--  sort by debuff type
-	if (aura_sort__is_buff and not aura_sort__is_friend) or (not aura_sort__is_buff and aura_sort__is_friend) then
-		local a_debuff_type, b_debuff_type = a.dispelName, b.dispelName
-		if a_debuff_type ~= b_debuff_type then
-			if not a_debuff_type then
-				return false
-			elseif not b_debuff_type then
-				return true
-			end
-			local a_can_dispel = can_dispel[a_debuff_type]
-			if (not a_can_dispel) ~= (not can_dispel[b_debuff_type]) then
-				-- show debuffs you can dispel first
-				if a_can_dispel then
-					return true
-				else
-					return false
-				end
-			end
-			return a_debuff_type < b_debuff_type
-		end
-	end
+-- 	--  sort by debuff type
+-- 	if (aura_sort__is_buff and not aura_sort__is_friend) or (not aura_sort__is_buff and aura_sort__is_friend) then
+-- 		local a_debuff_type, b_debuff_type = a.dispelName, b.dispelName
+-- 		if a_debuff_type ~= b_debuff_type then
+-- 			if not a_debuff_type then
+-- 				return false
+-- 			elseif not b_debuff_type then
+-- 				return true
+-- 			end
+-- 			local a_can_dispel = can_dispel[a_debuff_type]
+-- 			if (not a_can_dispel) ~= (not can_dispel[b_debuff_type]) then
+-- 				-- show debuffs you can dispel first
+-- 				if a_can_dispel then
+-- 					return true
+-- 				else
+-- 					return false
+-- 				end
+-- 			end
+-- 			return a_debuff_type < b_debuff_type
+-- 		end
+-- 	end
 
-	-- sort real auras before samples
-	local a_id, b_id = a.index, b.index
-	if a_id ~= 0 and b_id == 0 then
-		return true
-	elseif a_id == 0 and b_id ~= 0 then
-		return false
-	end
+-- 	-- sort real auras before samples
+-- 	local a_id, b_id = a.index, b.index
+-- 	if a_id ~= 0 and b_id == 0 then
+-- 		return true
+-- 	elseif a_id == 0 and b_id ~= 0 then
+-- 		return false
+-- 	end
 
-	-- sort by name
-	local a_name, b_name = a.name, b.name
-	if a_name ~= b_name then
-		if not a_name then
-			return true
-		elseif not b_name then
-			return false
-		end
-		-- TODO: Add sort by ones we can cast
-		return a_name < b_name
-	end
+-- 	-- sort by name
+-- 	local a_name, b_name = a.name, b.name
+-- 	if a_name ~= b_name then
+-- 		if not a_name then
+-- 			return true
+-- 		elseif not b_name then
+-- 			return false
+-- 		end
+-- 		-- TODO: Add sort by ones we can cast
+-- 		return a_name < b_name
+-- 	end
 
-	-- Use count for sample ids to preserve ID order.
-	if a_id == 0 and b_id == 0 then
-		local a_count, b_count = a.applications, b.applications
-		if not a_count then
-			return false
-		elseif not b_count then
-			return true
-		end
-		return a_count < b_count
-	end
+-- 	-- Use count for sample ids to preserve ID order.
+-- 	if a_id == 0 and b_id == 0 then
+-- 		local a_count, b_count = a.applications, b.applications
+-- 		if not a_count then
+-- 			return false
+-- 		elseif not b_count then
+-- 			return true
+-- 		end
+-- 		return a_count < b_count
+-- 	end
 
-	-- keep ID order
-	if not a_id then
-		return false
-	elseif not b_id then
-		return true
-	end
-	return a_id < b_id
-end
+-- 	-- keep ID order
+-- 	if not a_id then
+-- 		return false
+-- 	elseif not b_id then
+-- 		return true
+-- 	end
+-- 	return a_id < b_id
+-- end
 
 -- Setups up the aura frame and fill it with the proper data
 -- to display the proper aura.
@@ -392,27 +401,31 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 		aura_controls[i] = control
 	end
 
-	local is_mine = my_units[aura.sourceUnit]
+	local is_mine = aura.isPlayerAura -- my_units[aura.sourceUnit]
 	local who = is_mine and "my" or "other"
 	-- No way to know who applied a weapon buff so we have a separate
 	-- category for them.
 	if aura.weaponEnchantSlot then who = "weapon" end
-	local rule = who .. '_' .. (aura.isHelpful and "buffs" or "debuffs")
+	local rule = who .. '_' .. (aura.isHelpfulAura and "buffs" or "debuffs")
 
-	local layout = aura.isHelpful and db.layout.buff or db.layout.debuff
+	local layout = aura.isHelpfulAura and db.layout.buff or db.layout.debuff
 	control:SetFrameLevel(frame:GetFrameLevel() + layout.frame_level)
 
-	local unchanged = aura.index == control.id and aura.expirationTime == control.expiration_time and aura.spellId == control.spell_id and aura.weaponEnchantSlot == control.slot and aura.isHelpful == control.is_buff and aura.sourceUnit == control.caster and aura.applications == control.count and aura.duration == control.duration and aura.timeMod == control.time_mod
-
-	control.id = aura.index
+	control.index = aura.index
+	control.id = aura.auraInstanceID
 	control.is_mine = is_mine
-	control.is_buff = aura.isHelpful
+	control.is_buff = aura.isHelpfulAura
+	control.slot = aura.weaponEnchantSlot
+
 	control.name = aura.name
 	control.count = aura.applications
-	control.duration = aura.duration
+	if aura.auraInstanceID then
+		control.duration = C_UnitAuras.GetAuraDuration(frame.unit, aura.auraInstanceID)
+	else
+		control.duration = aura.duration
+	end
 	control.expiration_time = aura.expirationTime
 	control.debuff_type = aura.dispelName
-	control.slot = aura.weaponEnchantSlot
 	control.caster = aura.sourceUnit
 	control.spell_id = aura.spellId
 	control.time_mod = aura.timeMod
@@ -437,43 +450,36 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	end
 
 	local texts = db.texts[rule]
-	local count_db = texts.count
-	local font,font_size = frame:GetFont(count_db.font, count_db.size)
-	local count_text = control.count_text
-	local count_anchor = count_db.anchor
-	local count_color = count_db.color
-	count_text:ClearAllPoints()
-	count_text:SetPoint(count_anchor,control,count_anchor,count_db.offset_x,count_db.offset_y)
-	count_text:SetFont(font, font_size, "OUTLINE")
-	count_text:SetTextColor(count_color[1],count_color[2],count_color[3],count_color[4])
-	count_text:SetText(aura.applications > 1 and aura.applications or "")
 
-	if db.cooldown[rule] and aura.duration and aura.duration > 0 then
-		local cooldown = control.cooldown
-		-- Avoid updating the cooldown frame if nothing changed to stop the flashing Aura
-		-- problem since 4.0.1.
-		if not unchanged or not cooldown:IsShown() then
-			cooldown:Show()
-			CooldownFrame_Set(cooldown, aura.expirationTime - aura.duration, aura.duration, 1)
-		end
+	local count_db = texts.count
+	local font, font_size = frame:GetFont(count_db.font, count_db.size)
+	local count_text = control.count_text
+	count_text:ClearAllPoints()
+	count_text:SetPoint(count_db.anchor, control, count_db.anchor, count_db.offset_x, count_db.offset_y)
+	count_text:SetFont(font, font_size, "OUTLINE")
+	count_text:SetTextColor(unpack(count_db.color))
+	if aura.applications and aura.auraInstanceID then
+		local count = C_UnitAuras.GetAuraApplicationDisplayCount(frame.unit, aura.auraInstanceID)
+		count_text:SetText(count)
+	end
+
+	if db.cooldown[rule] then
+		control.cooldown:SetCooldownFromDurationObject(control.duration)
+		control.cooldown:Show()
 	else
-		control.cooldown:SetCooldown(0, 0)
 		control.cooldown:Hide()
 	end
 
-	if db.cooldown_text[rule] and aura.duration and aura.duration > 0 then
+	if db.cooldown_text[rule] then
 		local cooldown_text = control.cooldown_text
 		local cooldown_text_db = texts.cooldown_text
-		local color = cooldown_text_db.color
-		local r,g,b,a = color[1],color[2],color[3],color[4]
 		font,font_size = frame:GetFont(cooldown_text_db.font, cooldown_text_db.size)
 		cooldown_text:SetFont(font, font_size, "OUTLINE")
 		cooldown_text:ClearAllPoints()
-		local anchor = cooldown_text_db.anchor
-		cooldown_text:SetPoint(anchor,control,anchor,cooldown_text_db.offset_x,cooldown_text_db.offset_y)
+		cooldown_text:SetPoint(cooldown_text_db.anchor, control, cooldown_text_db.anchor, cooldown_text_db.offset_x, cooldown_text_db.offset_y)
 		local color_by_time = cooldown_text_db.color_by_time
 		if not color_by_time then
-			cooldown_text:SetTextColor(r,g,b,a)
+			cooldown_text:SetTextColor(unpack(cooldown_text_db.color))
 		end
 		cooldown_text.color_by_time = cooldown_text_db.color_by_time
 		PitBull4_Aura:EnableCooldownText(control)
@@ -496,14 +502,13 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 		if color_type == "weapon" and aura.weaponEnchantQuality then
 			local r,g,b = GetItemQualityColor(aura.weaponEnchantQuality)
 			border:SetVertexColor(r,g,b)
-		elseif color_type == "type" then
-			local color = colors.type[tostring(aura.dispelName)]
-			if not color then
-				-- Use the Other color if there's not
-				-- a color for the specific debuff type.
-				color = colors.type["nil"]
+		elseif color_type == "type" and aura.auraInstanceID then
+			local color = C_UnitAuras.GetAuraDispelTypeColor(frame.unit, aura.auraInstanceID, dispel_color_curve)
+			if color == nil then
+				-- Use the Other color if there's not a color for the specific debuff type.
+				color = dispel_color_curve:Evaluate(0)
 			end
-			border:SetVertexColor(unpack(color))
+			border:SetVertexColor(color:GetRGB())
 		elseif color_type == "caster" then
 			border:SetVertexColor(unpack(colors.caster[who]))
 		elseif color_type == "custom" and border_db.custom_color then
@@ -518,7 +523,12 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	end
 end
 
+local function compare_units(unit_a, unit_b)
+	return unit_a == unit_b or (not C_Secrets.ShouldUnitComparisonBeSecret(unit_a, unit_b) and UnitIsUnit(unit_a, unit_b))
+end
+
 local function update_auras(frame, db, is_buff)
+
 	-- Get the controls table
 	local controls
 	if is_buff then
@@ -536,7 +546,7 @@ local function update_auras(frame, db, is_buff)
 	end
 	local unit = frame.unit
 	local is_friend = unit and UnitIsFriend("player", unit)
-	local is_player = unit and UnitIsUnit(unit, "player")
+	local is_player = compare_units(unit, "player")
 
 	local max = is_buff and db.max_buffs or db.max_debuffs
 
@@ -567,12 +577,12 @@ local function update_auras(frame, db, is_buff)
 		get_aura_list_sample(list, unit, max, db, is_buff, is_player)
 	end
 
-	local layout = is_buff and db.layout.buff or db.layout.debuff
-	if layout.sort then
-		aura_sort__is_friend = is_friend
-		aura_sort__is_buff = is_buff
-		table.sort(list, aura_sort)
-	end
+	-- local layout = is_buff and db.layout.buff or db.layout.debuff
+	-- if layout.sort then
+	-- 	aura_sort__is_friend = is_friend
+	-- 	aura_sort__is_buff = is_buff
+	-- 	table.sort(list, aura_sort)
+	-- end
 
 	-- Limit the number of displayed buffs here after we
 	-- have filtered and sorted to allow the most important
@@ -590,40 +600,47 @@ local function update_auras(frame, db, is_buff)
 	end
 end
 
--- TODO Configurable formatting
-local function format_time(seconds)
-	if seconds >= 86400 then
+
+local function format_time(seconds, threshold)
+	threshold = threshold or 1.5
+	if seconds >= 86400 * threshold then
 		return DAY_ONELETTER_ABBR,floor(seconds/86400)
-	elseif seconds >= 3600 then
+	elseif seconds >= 3600 * threshold then
 		return HOUR_ONELETTER_ABBR,ceil(seconds/3600)
-	elseif seconds >= 180 then
+	elseif seconds >= 120 * threshold then
 		return MINUTE_ONELETTER_ABBR,ceil(seconds/60)
 	elseif seconds > 60 then
 		seconds = ceil(seconds)
 		return "%d:%02d",seconds/60,seconds%60
 	elseif seconds < 3 then
 		return "%.1f",seconds
-	else
-		return "%d",ceil(seconds)
 	end
+	return "%d",ceil(seconds)
 end
+
+local time_left_color_curve = C_CurveUtil.CreateColorCurve()
+time_left_color_curve:AddPoint(0.1, CreateColor(1,0,0)) -- less than 10% so stay red.
+time_left_color_curve:AddPoint(0.2, CreateColor(1,1,0)) -- fade from yellow to red between 20% left to 10% left
+time_left_color_curve:AddPoint(0.3, CreateColor(0,1,0)) -- fade from green to yellow betwee 30% left to 20% left
 
 local function update_cooldown_text(aura)
 	local cooldown_text = aura.cooldown_text
 	if not cooldown_text:IsShown() then return end
-	local expiration_time = aura.expiration_time
-	if not expiration_time then return end
 	local duration = aura.duration
-	local color_by_time = cooldown_text.color_by_time
+	if not duration then return end
 
-	local current_time = GetTime()
-	local time_left = expiration_time - current_time
-	if aura.time_mod > 0 then
-		time_left = time_left / aura.time_mod
+	if cooldown_text.color_by_time then
+		local color = duration:EvaluateRemainingPercent(time_left_color_curve)
+		cooldown_text:SetTextColor(color:GetRGB())
 	end
+	-- cooldown_text:SetAlphaFromBoolean(duration:IsZero(), 0, 1)
 
-	local new_time
-	if time_left >= 0 then
+	local time_left = duration:GetRemainingDuration()
+	if issecretvalue(time_left) or time_left == 0 then
+		cooldown_text:SetText(C_StringUtil.TruncateWhenZero(time_left)) -- XXX wtf, no formatters?
+	elseif time_left >= 0 then
+		cooldown_text:SetFormattedText(format_time(time_left))
+		local new_time = 0
 		if time_left >= 3600 then
 			new_time = 30
 		elseif time_left >= 180 then
@@ -635,29 +652,8 @@ local function update_cooldown_text(aura)
 		else
 			new_time = 0.25
 		end
-		if color_by_time and duration and duration > 0 then
-			local duration_left = time_left / duration
-			if duration_left >= 0.3 then
-				-- More than 30% so green
-				cooldown_text:SetTextColor(0,1,0,1)
-			elseif duration_left >= 0.2 then
-				-- fade from green to yellow betwee 30% left to 20% left
-				local r = 1 - ((duration_left - 0.2) * 10)
-				cooldown_text:SetTextColor(r,1,0,1)
-			elseif duration_left >= 0.1 then
-				-- fade from yellow to red betwee 20% left to 10% left
-				local g = (duration_left - 0.1) * 10
-				cooldown_text:SetTextColor(1,g,0,1)
-			else
-				-- less than 10% so stay red.
-				cooldown_text:SetTextColor(1,0,0,1)
-			end
-		end
-		cooldown_text:SetFormattedText(format_time(time_left))
-	else
-		cooldown_text:SetText("")
+		return new_time
 	end
-	return new_time
 end
 
 local function clear_auras(frame, is_buff)
@@ -744,7 +740,7 @@ end
 
 function PitBull4_Aura:UpdateCooldownTexts(elapsed)
 	local min_time
-	for aura,time in pairs(cooldown_texts) do
+	for aura, time in pairs(cooldown_texts) do
 		time = time - elapsed
 		if time <= 0 then
 			time = update_cooldown_text(aura,elapsed)
@@ -868,35 +864,19 @@ function PitBull4_Aura:UpdateFilters()
 	end
 end
 
-local guids_to_update = {}
-
-function PitBull4_Aura:UNIT_AURA(event, unit)
-	-- UNIT_AURA updates are throttled by collecting them in
-	-- guids_to_update and then updating the relevent frames
-	-- once every 0.2 seconds.  We capture the GUID at the event
-	-- time because the unit ids can change between when we receive
-	-- the event and do the throttled update
-	local guid = unit and UnitGUID(unit)
-	if guid then
-		guids_to_update[guid] = true
+function PitBull4_Aura:UNIT_AURA(_, unit)
+	for frame in PitBull4:IterateFrames() do
+		if frame.unit == unit then
+			if self:GetLayoutDB(frame).enabled then
+				self:UpdateFrame(frame)
+			else
+				self:ClearFrame(frame)
+			end
+		end
 	end
 end
 
--- Function to execute the throttled updates
 function PitBull4_Aura:OnUpdate()
-	if next(guids_to_update) then
-		for frame in PitBull4:IterateFrames() do
-			if guids_to_update[frame.guid] then
-				if self:GetLayoutDB(frame).enabled then
-					self:UpdateFrame(frame)
-				else
-					self:ClearFrame(frame)
-				end
-			end
-		end
-		wipe(guids_to_update)
-	end
-
 	self:UpdateWeaponEnchants()
 
 	self:UpdateFilters()
@@ -906,5 +886,4 @@ function PitBull4_Aura:UpdateAll()
 	for frame in PitBull4:IterateFrames() do
 		self:Update(frame)
 	end
-	wipe(guids_to_update)
 end

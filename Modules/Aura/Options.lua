@@ -25,12 +25,13 @@ local color_defaults = {
 		other = {1, 0, 0, 1},
 	},
 	type = {
-		Poison = {0, 1, 0, 1},
-		Magic = {0, 0, 1, 1},
-		Disease = {.55, .15, 0, 1},
-		Curse = {5, 0, 5, 1},
-		Enrage = {1, .55, 0, 1},
-		["nil"] = {1, 0, 0, 1},
+		None = { _G.DEBUFF_TYPE_NONE_COLOR:GetRGBA() },
+		Magic = { _G.DEBUFF_TYPE_MAGIC_COLOR:GetRGBA() },
+		Curse = { _G.DEBUFF_TYPE_CURSE_COLOR:GetRGBA() },
+		Disease = { _G.DEBUFF_TYPE_DISEASE_COLOR:GetRGBA() },
+		Poison = { _G.DEBUFF_TYPE_POISON_COLOR:GetRGBA() },
+		Enrage = { 243/255, 95/255, 245/255, 1 },
+		Bleed = { _G.DEBUFF_TYPE_BLEED_COLOR:GetRGBA() },
 	},
 }
 
@@ -1802,6 +1803,19 @@ local is_height = {
 	up_left    = true,
 }
 
+local function update_dispel_color_curve()
+	local dispel_colors = PitBull4_Aura.db.profile.global.colors.type
+	local curve = PitBull4_Aura.dispel_color_curve
+	curve:ClearPoints()
+	curve:AddPoint(0, CreateColor(unpack(dispel_colors.None)))
+	curve:AddPoint(1, CreateColor(unpack(dispel_colors.Magic)))
+	curve:AddPoint(2, CreateColor(unpack(dispel_colors.Curse)))
+	curve:AddPoint(3, CreateColor(unpack(dispel_colors.Disease)))
+	curve:AddPoint(4, CreateColor(unpack(dispel_colors.Poison)))
+	curve:AddPoint(9, CreateColor(unpack(dispel_colors.Enrage)))
+	curve:AddPoint(11, CreateColor(unpack(dispel_colors.Bleed)))
+end
+
 PitBull4_Aura:SetColorOptionsFunction(function(self)
 	local function get(info)
 		local group = info[#info - 1]
@@ -1812,6 +1826,9 @@ PitBull4_Aura:SetColorOptionsFunction(function(self)
 		local group = info[#info - 1]
 		local id = info[#info]
 		self.db.profile.global.colors[group][id] = {r, g, b, a}
+		if group == "type" then
+			update_dispel_color_curve()
+		end
 		self:UpdateAll()
 	end
 	return 'caster', {
@@ -1842,37 +1859,13 @@ PitBull4_Aura:SetColorOptionsFunction(function(self)
 		name = L["Dispel type"],
 		inline = true,
 		args = {
-			Poison = {
+			Enrage = {
 				type = 'color',
-				name = L["Poison"],
-				desc = L["Color for poison."],
-				get = get,
-				set = set,
-				order = 0,
-			},
-			Magic = {
-				type = 'color',
-				name = L["Magic"],
-				desc = L["Color for magic."],
+				name = L["Bleed"],
+				desc = L["Color for bleed."],
 				get = get,
 				set = set,
 				order = 1,
-			},
-			Disease = {
-				type = 'color',
-				name = L["Disease"],
-				desc = L["Color for disease."],
-				get = get,
-				set = set,
-				order = 2,
-			},
-			Curse = {
-				type = 'color',
-				name = L["Curse"],
-				desc = L["Color for curse."],
-				get = get,
-				set = set,
-				order = 3,
 			},
 			Enrage = {
 				type = 'color',
@@ -1880,15 +1873,47 @@ PitBull4_Aura:SetColorOptionsFunction(function(self)
 				desc = L["Color for enrage."],
 				get = get,
 				set = set,
+				order = 2,
+			},
+			Poison = {
+				type = 'color',
+				name = L["Poison"],
+				desc = L["Color for poison."],
+				get = get,
+				set = set,
+				order = 3,
+			},
+			Disease = {
+				type = 'color',
+				name = L["Disease"],
+				desc = L["Color for disease."],
+				get = get,
+				set = set,
 				order = 4,
 			},
-			["nil"] = {
+			Curse = {
+				type = 'color',
+				name = L["Curse"],
+				desc = L["Color for curse."],
+				get = get,
+				set = set,
+				order = 5,
+			},
+			Magic = {
+				type = 'color',
+				name = L["Magic"],
+				desc = L["Color for magic."],
+				get = get,
+				set = set,
+				order = 6,
+			},
+			None = {
 				type = 'color',
 				name = L["Other"],
 				desc = L["Color for other auras without a type."],
 				get = get,
 				set = set,
-				order = 5,
+				order = 7,
 			},
 		},
 	}, function(info)
@@ -1905,6 +1930,7 @@ PitBull4_Aura:SetColorOptionsFunction(function(self)
 				end
 			end
 		end
+		update_dispel_color_curve()
 	end
 end)
 
@@ -1954,10 +1980,11 @@ local function copy(data)
 	return t
 end
 
-PitBull4_Aura.OnProfileChanged_funcs[#PitBull4_Aura.OnProfileChanged_funcs+1] =
-function(self)
+PitBull4_Aura.OnProfileChanged_funcs[#PitBull4_Aura.OnProfileChanged_funcs+1] = function(self)
 	-- Recalculate the filter options on a profile change
 	self.SetHighlightOptions(self, HIGHLIGHT_FILTER_OPTIONS)
+
+	update_dispel_color_curve()
 end
 
 function PitBull4_Aura.SetHighlightOptions(self, options)
@@ -2724,7 +2751,7 @@ PitBull4_Aura:SetLayoutOptionsFunction(function(self)
 				end,
 				get = function(info)
 					local group = MSQ:Group("PitBull4 Aura", PitBull4.Options.GetCurrentLayout())
-					return MSQ:GetSkin(group.db.SkinID) and group.db.SkinID or "Blizzard"
+					return MSQ:GetSkin(group.db.SkinID) and group.db.SkinID or PitBull4_Aura.DEFAULT_SKIN
 				end,
 				set = function(info, value)
 					local group = MSQ:Group("PitBull4 Aura", PitBull4.Options.GetCurrentLayout())

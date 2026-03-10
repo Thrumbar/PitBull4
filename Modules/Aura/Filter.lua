@@ -609,6 +609,7 @@ function PitBull4_Aura:FilterEntry(name, entry, frame)
 	if not name or name == "" then return true end
 	local filter = self:GetFilterDB(name)
 	if not filter then return true end
+	if issecretvalue(entry.name) then return true end
 	local filter_func = self.filter_types[filter.filter_type].filter_func
 	return filter_func(name, entry, frame)
 end
