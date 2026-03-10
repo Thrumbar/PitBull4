@@ -57,11 +57,6 @@ function PitBull4_Aura:HighlightFilterIterator(frame, db, is_buff)
 
 		entry.index = id
 
-		-- The enrage dispel type is "" instead of "Enrage"
-		if entry.dispelName == "" then
-			entry.dispelName = "Enrage"
-		end
-
 		self:HighlightFilter(db, entry, frame)
 
 		id = id + 1
@@ -75,7 +70,7 @@ function PitBull4_Aura:HighlightFilter(db, entry, frame)
 	local highlight_filters = db.highlight_filters
 	local highlight_filters_color_by_type = db.highlight_filters_color_by_type
 	local highlight_filters_custom_color = db.highlight_filters_custom_color
-	local dispel_type_colors = self.db.profile.global.colors.type
+	local dispel_color_curve = self.dispel_color_curve
 
 	-- Iterate the highlight filters
 	for id = 1, #highlight_filters do
@@ -93,12 +88,11 @@ function PitBull4_Aura:HighlightFilter(db, entry, frame)
 
 					-- Determine the color for the match
 					if highlight_filters_color_by_type[id] then
-						local dispel_type = tostring(entry.dispelName)
-						local color = dispel_type_colors[dispel_type]
-						if not color then
-							color = dispel_type_colors["nil"]
+						local color = entry.auraInstanceID and C_UnitAuras.GetAuraDispelTypeColor(frame.unit, entry.auraInstanceID, dispel_color_curve)
+						if color == nil then
+							color = dispel_color_curve:Evaluate(0)
 						end
-						result.color = color
+						result.color = {color:GetRGB()}
 					else
 						result.color = highlight_filters_custom_color[id]
 					end

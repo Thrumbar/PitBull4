@@ -35,7 +35,7 @@ local weapon_durations = {
 -- constants for building sample auras
 local sample_buff_icon   = [[Interface\Icons\Spell_ChargePositive]]
 local sample_debuff_icon = [[Interface\Icons\Spell_ChargeNegative]]
-local sample_debuff_types = { "Poison", "Magic", "Disease", "Curse", "Enrage", "nil" }
+local sample_debuff_types = { "Poison", "Magic", "Disease", "Curse", "Enrage", "Bleed", "None" }
 
 -- constants for formating time
 local HOUR_ONELETTER_ABBR = _G.HOUR_ONELETTER_ABBR:gsub("%s", "") -- "%dh"
