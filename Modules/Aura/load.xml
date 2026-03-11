@@ -11,6 +11,8 @@
 	<Script file="FilterTypes.lua"/>
 	<Script file="Filter.lua"/>
 	<Script file="Highlight.lua"/>
+	<Script file="UpdateCooldownTexts.lua"/>
+	<Script file="UpdateWeaponEnchants.lua"/>
 	<Script file="Update.lua"/>
 	<Script file="Layout.lua"/>
 	<Script file="Skin.lua"/>

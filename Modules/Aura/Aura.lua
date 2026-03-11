@@ -14,23 +14,11 @@ PitBull4_Aura.OnProfileChanged_funcs = {}
 local timerFrame = CreateFrame("Frame")
 timerFrame:Hide()
 local timer = 0
-local elapsed_since_text_update = 0
 timerFrame:SetScript("OnUpdate",function(self, elapsed)
 	timer = timer + elapsed
 	if timer >= 0.2 then
 		PitBull4_Aura:OnUpdate()
 		timer = 0
-	end
-
-	local next_text_update = PitBull4_Aura.next_text_update
-	if next_text_update then
-		next_text_update = next_text_update - elapsed
-		elapsed_since_text_update = elapsed_since_text_update + elapsed
-		if next_text_update <= 0 then
-			next_text_update = PitBull4_Aura:UpdateCooldownTexts(elapsed_since_text_update)
-			elapsed_since_text_update = 0
-		end
-		PitBull4_Aura.next_text_update = next_text_update
 	end
 end)
 
@@ -52,9 +40,21 @@ function PitBull4_Aura:OnDisable()
 end
 
 function PitBull4_Aura:OnProfileChanged()
-	local funcs = self.OnProfileChanged_funcs
-	for i = 1, #funcs do
-		funcs[i](self)
+	for _, func in next, self.OnProfileChanged_funcs do
+		func(self)
+	end
+end
+
+function PitBull4_Aura:UNIT_AURA(_, unit, update_info)
+	for frame in PitBull4:IterateFrames() do
+		if frame.unit == unit then
+			if self:GetLayoutDB(frame).enabled then
+				self:UpdateAuraData(frame, update_info)
+				self:UpdateFrame(frame)
+			else
+				self:ClearFrame(frame)
+			end
+		end
 	end
 end
 
@@ -64,13 +64,18 @@ function PitBull4_Aura:ClearFrame(frame)
 		frame.aura_highlight = frame.aura_highlight:Delete()
 	end
 end
-
 PitBull4_Aura.OnHide = PitBull4_Aura.ClearFrame
 
 function PitBull4_Aura:UpdateFrame(frame)
 	self:UpdateSkin(frame)
 	self:UpdateAuras(frame)
 	self:LayoutAuras(frame)
+end
+
+function PitBull4_Aura:UpdateAll()
+	for frame in PitBull4:IterateFrames() do
+		self:Update(frame)
+	end
 end
 
 function PitBull4_Aura:LibSharedMedia_Registered(event, mediatype, key)

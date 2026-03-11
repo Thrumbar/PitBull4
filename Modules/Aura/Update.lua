@@ -12,34 +12,19 @@ local GetItemQualityColor = C_Item.GetItemQualityColor
 -- The table we use for gathering the aura data, filtering
 -- and then sorting them.
 local list = {}
+local aura_data = {}
+
+-- Table we store the weapon enchant info in.
+local weapon_list = PitBull4_Aura.weapon_list
 
 -- constants for the slot ids
 local INVSLOT_MAINHAND = _G.INVSLOT_MAINHAND
 local INVSLOT_OFFHAND = _G.INVSLOT_OFFHAND
 
--- Table we store the weapon enchant info in.
--- This table is never cleared and entries are reused.
--- The entry tables follow the same format as those used for the aura
--- list.  Since they are simply copied into that list.  To avoid
--- GC'ing entries constantly when there is no MH or OH enchant the
--- index 2 (the slot value) is set to nil.
-local weapon_list = {}
-
--- cache for weapon enchant durations
--- contains the name of the enchant and the value of the duration
-local weapon_durations = {
-	[INVSLOT_MAINHAND] = C_DurationUtil.CreateDuration(),
-	[INVSLOT_OFFHAND] = C_DurationUtil.CreateDuration(),
-}
-
 -- constants for building sample auras
 local sample_buff_icon   = [[Interface\Icons\Spell_ChargePositive]]
 local sample_debuff_icon = [[Interface\Icons\Spell_ChargeNegative]]
 local sample_debuff_types = { "Poison", "Magic", "Disease", "Curse", "Enrage", "Bleed", "None" }
-
--- constants for formating time
-local HOUR_ONELETTER_ABBR = _G.HOUR_ONELETTER_ABBR:gsub("%s", "") -- "%dh"
-local MINUTE_ONELETTER_ABBR = _G.MINUTE_ONELETTER_ABBR:gsub("%s", "") -- "%dm"
 
 -- units to consider mine
 local my_units = {
@@ -64,38 +49,33 @@ local function get_aura_list(list, unit, db, is_buff, frame)
 	local player_filter = filter .. "|PLAYER"
 	local id = 1
 	local index = 1
-	local set_consolidate = _G.UnitAuraBySlot and ClassicExpansionAtMost(LE_EXPANSION_WARLORDS_OF_DRAENOR)
 
 	-- Loop through the auras
 	local slots = {C_UnitAuras.GetAuraSlots(unit, filter)}
-	for i = 2, #slots do
+	for i = 2, #slots do -- continuationToken is the first return value of UnitAuraSlots
 		local entry = C_UnitAuras.GetAuraDataBySlot(unit, slots[i])
+		if entry then -- Protect against GetAuraDataBySlot desyncing with GetAuraSlots
+			list[index] = entry
 
-		list[index] = entry
+			entry.index = id
+			entry.isPlayerAura = not C_UnitAuras.IsAuraFilteredOutByInstanceID(unit, entry.auraInstanceID, player_filter)
+			entry.isHelpfulAura = is_buff
+			entry.isHarmfulAura = not is_buff
 
-		entry.index = id
-		entry.isPlayerAura = not C_UnitAuras.IsAuraFilteredOutByInstanceID(unit, entry.auraInstanceID, player_filter)
-		entry.isHelpfulAura = is_buff
-		entry.isHarmfulAura = not is_buff
+			-- Pass the entry through to the Highlight system
+			if db.highlight then
+				PitBull4_Aura:HighlightFilter(db, entry, frame)
+			end
 
-		-- Only available in the classic API z.z
-		if set_consolidate then
-			entry.shouldConsolidate = select(16, _G.UnitAuraBySlot(unit, slots[i]))
+			-- Filter the list if not true
+			local pb4_filter_name = is_buff and db.layout.buff.filter or db.layout.debuff.filter
+			if PitBull4_Aura:FilterEntry(pb4_filter_name, entry, frame) then
+				-- Reuse this index position if the aura was filtered.
+				index = index + 1
+			end
+
+			id = id + 1
 		end
-
-		-- Pass the entry through to the Highlight system
-		if db.highlight then
-			PitBull4_Aura:HighlightFilter(db, entry, frame)
-		end
-
-		-- Filter the list if not true
-		local pb4_filter_name = is_buff and db.layout.buff.filter or db.layout.debuff.filter
-		if PitBull4_Aura:FilterEntry(pb4_filter_name, entry, frame) then
-			-- Reuse this index position if the aura was filtered.
-			index = index + 1
-		end
-
-		id = id + 1
 	end
 
 	-- Clear the list of extra entries
@@ -174,129 +154,6 @@ local function get_aura_list_sample(list, unit, max, db, is_buff, is_player)
 		entry.timeMod = 1
 		entry.points = {}
 	end
-end
-
--- Get the name of the temporary enchant on a weapon from the tooltip
--- given the item slot the weapon is in.
-local get_weapon_enchant_name
-if C_TooltipInfo then -- XXX wow_retail
-	function get_weapon_enchant_name(slot)
-		local data = C_TooltipInfo.GetInventoryItem("player", slot, true)
-		if not data then return end
-
-		for _, line in next, data.lines do
-			if line.type == 0 and line.leftText then -- Enum.TooltipDataLineType.None
-				local buff_name = line.leftText:match("^(.+) %(%d+ [^$)]+%)$")
-				if buff_name then
-					local buff_name_no_rank = buff_name:match("^(.*) %d+$")
-					return buff_name_no_rank or buff_name
-				end
-			end
-		end
-	end
-else
-	local WorldFrame = _G.WorldFrame
-	local tt = CreateFrame("GameTooltip", "PitBull4_Aura_Tooltip", nil)
-	tt:SetOwner(WorldFrame, "ANCHOR_NONE")
-	local left = {}
-
-	local g = tt:CreateFontString()
-	g:SetFontObject(_G.GameFontNormal)
-	for i = 1, 30 do
-		local f = tt:CreateFontString()
-		f:SetFontObject(_G.GameFontNormal)
-		tt:AddFontStrings(f, g)
-		left[i] = f
-	end
-
-	get_weapon_enchant_name = function(slot)
-		tt:ClearLines()
-		if not tt:IsOwned(WorldFrame) then
-			tt:SetOwner(WorldFrame, "ANCHOR_NONE")
-		end
-		tt:SetInventoryItem("player", slot)
-
-		for i = 1, 30 do
-			local text = left[i]:GetText()
-			if text then
-				local buff_name = text:match("^(.+) %(%d+ [^$)]+%)$")
-				if buff_name then
-					local buff_name_no_rank = buff_name:match("^(.*) %d+$")
-					return buff_name_no_rank or buff_name
-				end
-			else
-				break
-			end
-		end
-	end
-end
-
--- Takes the data for a weapon enchant and builds an aura entry
-local function set_weapon_entry(list, is_enchant, time_left, expiration_time, count, slot)
-	local entry = list[slot]
-	if not entry then
-		entry = {}
-		list[slot] = entry
-	end
-
-	-- No such enchant, clear the table
-	if not is_enchant then
-		wipe(entry)
-		return
-	end
-
-	local weapon, _, quality, _, _, _, _, _, _, texture = GetItemInfo(GetInventoryItemLink("player", slot))
-	-- Try and get the name of the enchant from the tooltip, if not
-	-- use the weapon name.
-	local name = get_weapon_enchant_name(slot) or weapon
-
-	-- name should always have gotten set by the above but per ticket 418 it apparently
-	-- can sometimes not get set.  Probably due the cache being empty.  It's ok to end
-	-- up doing nothing because eventually it should work and the weapon enchants are
-	-- checked on a timer anyway.
-	if not name then
-		wipe(entry)
-		return
-	end
-
-	local duration = weapon_durations[slot]
-	duration:SetTimeSpan(GetTime(), expiration_time)
-
-	entry.index = 0 -- index 0 means PitBull generated aura
-	-- If there's no enchant set we set weaponEnchantSlot to nil
-	entry.weaponEnchantSlot = slot
-	entry.weaponEnchantQuality = quality
-	entry.isHelpful = true
-	entry.isHelpfulAura = true
-	entry.isHarmful = false
-	entry.isHarmfulAura = false
-	entry.name = name
-	entry.icon = texture
-	entry.applications = count
-	entry.dispelName = nil
-	entry.duration = duration
-	entry.expirationTime = expiration_time
-	entry.isPlayerAura = true
-	entry.sourceUnit = "player" -- treat weapon enchants as always yours
-	entry.isStealable = false
-	entry.nameplateShowPersonal = false
-	entry.spellId = nil
-	entry.canApplyAura = false
-	entry.isBossAura = false
-	entry.isFromPlayerOrPlayerPet = false
-	entry.nameplateShowAll = false
-	entry.timeMod = 1
-	entry.points = {}
-end
-
--- If the src table has a valid weapon enchant entry for the slot
--- copy it to the dst table.  Uses #dst + 1 to determine next entry
-local function copy_weapon_entry(src, dst, slot)
-	local entry = src[slot]
-	if not entry or not entry.weaponEnchantSlot then
-		return
-	end
-	dst[#dst + 1] = CopyTable(entry)
 end
 
 -- local aura_sort__is_friend
@@ -527,8 +384,16 @@ local function compare_units(unit_a, unit_b)
 	return unit_a == unit_b or (not C_Secrets.ShouldUnitComparisonBeSecret(unit_a, unit_b) and UnitIsUnit(unit_a, unit_b))
 end
 
-local function update_auras(frame, db, is_buff)
+-- If the src table has a valid weapon enchant entry for the slot
+-- copy it to the dst table.  Uses #dst + 1 to determine next entry
+local function copy_weapon_entry(src, dst, slot)
+	local entry = src[slot]
+	if entry and entry.weaponEnchantSlot then
+		dst[#dst + 1] = CopyTable(entry)
+	end
+end
 
+local function update_auras(frame, db, is_buff)
 	-- Get the controls table
 	local controls
 	if is_buff then
@@ -600,62 +465,6 @@ local function update_auras(frame, db, is_buff)
 	end
 end
 
-
-local function format_time(seconds, threshold)
-	threshold = threshold or 1.5
-	if seconds >= 86400 * threshold then
-		return DAY_ONELETTER_ABBR,floor(seconds/86400)
-	elseif seconds >= 3600 * threshold then
-		return HOUR_ONELETTER_ABBR,ceil(seconds/3600)
-	elseif seconds >= 120 * threshold then
-		return MINUTE_ONELETTER_ABBR,ceil(seconds/60)
-	elseif seconds > 60 then
-		seconds = ceil(seconds)
-		return "%d:%02d",seconds/60,seconds%60
-	elseif seconds < 3 then
-		return "%.1f",seconds
-	end
-	return "%d",ceil(seconds)
-end
-
-local time_left_color_curve = C_CurveUtil.CreateColorCurve()
-time_left_color_curve:AddPoint(0.1, CreateColor(1,0,0)) -- less than 10% so stay red.
-time_left_color_curve:AddPoint(0.2, CreateColor(1,1,0)) -- fade from yellow to red between 20% left to 10% left
-time_left_color_curve:AddPoint(0.3, CreateColor(0,1,0)) -- fade from green to yellow betwee 30% left to 20% left
-
-local function update_cooldown_text(aura)
-	local cooldown_text = aura.cooldown_text
-	if not cooldown_text:IsShown() then return end
-	local duration = aura.duration
-	if not duration then return end
-
-	if cooldown_text.color_by_time then
-		local color = duration:EvaluateRemainingPercent(time_left_color_curve)
-		cooldown_text:SetTextColor(color:GetRGB())
-	end
-	-- cooldown_text:SetAlphaFromBoolean(duration:IsZero(), 0, 1)
-
-	local time_left = duration:GetRemainingDuration()
-	if issecretvalue(time_left) or time_left == 0 then
-		cooldown_text:SetText(C_StringUtil.TruncateWhenZero(time_left)) -- XXX wtf, no formatters?
-	elseif time_left >= 0 then
-		cooldown_text:SetFormattedText(format_time(time_left))
-		local new_time = 0
-		if time_left >= 3600 then
-			new_time = 30
-		elseif time_left >= 180 then
-			new_time = 1
-		elseif time_left >= 60 then
-			new_time = 0.5
-		elseif time_left < 3 then
-			new_time = 0
-		else
-			new_time = 0.25
-		end
-		return new_time
-	end
-end
-
 local function clear_auras(frame, is_buff)
 	local controls
 	if is_buff then
@@ -720,128 +529,6 @@ function PitBull4_Aura:UpdateAuras(frame)
 	end
 end
 
-local cooldown_texts = {}
-
-function PitBull4_Aura:EnableCooldownText(aura)
-	local cooldown_text = aura.cooldown_text
-	if not cooldown_text then return end
-	cooldown_text:Show()
-	cooldown_texts[aura] = 0
-	self.next_text_update = 0
-end
-
-function PitBull4_Aura:DisableCooldownText(aura)
-	local cooldown_text = aura.cooldown_text
-	if cooldown_text then
-		cooldown_text:Hide()
-	end
-	cooldown_texts[aura] = nil
-end
-
-function PitBull4_Aura:UpdateCooldownTexts(elapsed)
-	local min_time
-	for aura, time in pairs(cooldown_texts) do
-		time = time - elapsed
-		if time <= 0 then
-			time = update_cooldown_text(aura,elapsed)
-		end
-		cooldown_texts[aura] = time
-		if not min_time or (time and time < min_time) then
-			min_time = time
-		end
-	end
-	return min_time
-end
-
--- Looks for changes to weapon enchants that we do not have cached
--- and if there is one updates all the frames set to display them.
--- If force is set then it clears the cache first.  Useful for
--- config changes that may invalidate our cache.
---
--- General operation of the Weapon Enchant aura system:
--- * Load changed weapon enchants into weapon_list which
---   is an table of aura entries identical in layout to list
--- * The aura entries are indexed by the slot id of the weapon.
--- * When a frames auras are updated (either normally or triggered
---   by a weapon enchant change) the weapon enchants are copied
---   into the list of auras built from UnitAura().
---
--- This design means that the tooltip scanning, duration calculations,
--- and spell icon guessing operations only happen once when the
--- weapon enchant is first seen.  Other arua changes for the player
--- simply cause the weapon enchant data to be copied again without
--- recalculation.
-function PitBull4_Aura:UpdateWeaponEnchants(force)
-	local updated = false
-	if force then
-		wipe(weapon_list)
-	end
-	local mh, mh_time_left, mh_count, _, oh, oh_time_left, oh_count = GetWeaponEnchantInfo()
-	local current_time = GetTime()
-	local mh_entry = weapon_list[INVSLOT_MAINHAND]
-	local oh_entry = weapon_list[INVSLOT_OFFHAND]
-
-	-- Grab the values from the weapon_list entries to use
-	-- to compare against the current values to look for changes.
-	local old_mh, old_mh_count, old_mh_expiration_time
-	if mh_entry then
-		old_mh = mh_entry.weaponEnchantSlot ~= nil and true or false
-		old_mh_count = mh_entry.applications
-		old_mh_expiration_time = mh_entry.expirationTime
-	end
-
-	local old_oh, old_oh_count, old_oh_expiration_time
-	if oh_entry then
-		old_oh = oh_entry.weaponEnchantSlot ~= nil and true or false
-		old_oh_count = oh_entry.applications
-		old_oh_expiration_time = oh_entry.expirationTime
-	end
-
-	-- GetWeaponEnchantInfo() briefly returns that there is
-	-- an enchant but with the time_left set to zero.
-	-- When this happens force it to appear to us as though
-	-- the enchant isn't there.
-	if mh_time_left == 0 then
-		mh, mh_time_left, mh_count = nil, nil, nil
-	end
-	if oh_time_left == 0 then
-		oh, oh_time_left, oh_count = nil, nil, nil
-	end
-
-	-- Calculate the expiration time from the time left.  We use
-	-- expiration time since the normal Aura system uses it instead
-	-- of time_left.
-	local mh_expiration_time = mh_time_left and mh_time_left / 1000 + current_time
-	local oh_expiration_time = oh_time_left and oh_time_left / 1000 + current_time
-
-	-- Test to see if the enchant has changed and if so set the entry for it
-	-- We check that the expiration time is at least 0.2 seconds further
-	-- ahead than it was to avoid rebuilding auras for rounding errors.
-	if mh ~= old_mh or mh_count ~= old_mh_count or (mh_expiration_time and old_mh_expiration_time and mh_expiration_time - old_mh_expiration_time > 0.2) then
-		set_weapon_entry(weapon_list, mh, mh_time_left, mh_expiration_time, mh_count, INVSLOT_MAINHAND)
-		updated = true
-	end
-	if oh ~= old_oh or oh_count ~= old_oh_count or (oh_expiration_time and old_oh_expiration_time and oh_expiration_time - old_oh_expiration_time > 0.2) then
-		set_weapon_entry(weapon_list, oh, oh_time_left, oh_expiration_time, oh_count, INVSLOT_OFFHAND)
-		updated = true
-	end
-
-	-- An enchant changed so find all the relevent frames and update
-	-- their auras.
-	if updated then
-		for frame in PitBull4:IterateFrames() do
-			local unit = frame.unit
-			if unit and UnitIsUnit(unit, "player") then
-				local db = self:GetLayoutDB(frame)
-				if db.enabled and db.enabled_weapons then
-					self:UpdateAuras(frame)
-					self:LayoutAuras(frame)
-				end
-			end
-		end
-	end
-end
-
 -- table of frames to be updated on next filter update
 local timed_filter_update = {}
 
@@ -864,26 +551,7 @@ function PitBull4_Aura:UpdateFilters()
 	end
 end
 
-function PitBull4_Aura:UNIT_AURA(_, unit)
-	for frame in PitBull4:IterateFrames() do
-		if frame.unit == unit then
-			if self:GetLayoutDB(frame).enabled then
-				self:UpdateFrame(frame)
-			else
-				self:ClearFrame(frame)
-			end
-		end
-	end
-end
-
 function PitBull4_Aura:OnUpdate()
 	self:UpdateWeaponEnchants()
-
 	self:UpdateFilters()
-end
-
-function PitBull4_Aura:UpdateAll()
-	for frame in PitBull4:IterateFrames() do
-		self:Update(frame)
-	end
 end
