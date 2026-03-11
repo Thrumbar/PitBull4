@@ -15,7 +15,10 @@ local INVSLOT_OFFHAND = _G.INVSLOT_OFFHAND
 -- list.  Since they are simply copied into that list.  To avoid
 -- GC'ing entries constantly when there is no MH or OH enchant the
 -- index 2 (the slot value) is set to nil.
-local weapon_list = {}
+local weapon_list = {
+	[INVSLOT_MAINHAND] = {},
+	[INVSLOT_OFFHAND] = {},
+}
 PitBull4_Aura.weapon_list = weapon_list
 
 -- cache for weapon enchant durations
@@ -42,12 +45,8 @@ local function get_weapon_enchant_name(slot)
 end
 
 -- Takes the data for a weapon enchant and builds an aura entry
-local function set_weapon_entry(list, is_enchant, time_left, expiration_time, count, slot)
-	local entry = list[slot]
-	if not entry then
-		entry = {}
-		list[slot] = entry
-	end
+local function set_weapon_entry(is_enchant, time_left, expiration_time, count, slot)
+	local entry = weapon_list[slot]
 
 	-- No such enchant, clear the table
 	if not is_enchant then
@@ -56,14 +55,8 @@ local function set_weapon_entry(list, is_enchant, time_left, expiration_time, co
 	end
 
 	local weapon, _, quality, _, _, _, _, _, _, texture = GetItemInfo(GetInventoryItemLink("player", slot))
-	-- Try and get the name of the enchant from the tooltip, if not
-	-- use the weapon name.
+	-- Try and get the name of the enchant from the tooltip, if not use the weapon name.
 	local name = get_weapon_enchant_name(slot) or weapon
-
-	-- name should always have gotten set by the above but per ticket 418 it apparently
-	-- can sometimes not get set.  Probably due the cache being empty.  It's ok to end
-	-- up doing nothing because eventually it should work and the weapon enchants are
-	-- checked on a timer anyway.
 	if not name then
 		wipe(entry)
 		return
@@ -76,27 +69,15 @@ local function set_weapon_entry(list, is_enchant, time_left, expiration_time, co
 	-- If there's no enchant set we set weaponEnchantSlot to nil
 	entry.weaponEnchantSlot = slot
 	entry.weaponEnchantQuality = quality
-	entry.isHelpful = true
 	entry.isHelpfulAura = true
-	entry.isHarmful = false
 	entry.isHarmfulAura = false
 	entry.name = name
 	entry.icon = texture
 	entry.applications = count
-	entry.dispelName = nil
+	entry.debuffType = nil
 	entry.duration = duration
-	entry.expirationTime = expiration_time
+	entry.expiration_time = expiration_time
 	entry.isPlayerAura = true
-	entry.sourceUnit = "player" -- treat weapon enchants as always yours
-	entry.isStealable = false
-	entry.nameplateShowPersonal = false
-	entry.spellId = nil
-	entry.canApplyAura = false
-	entry.isBossAura = false
-	entry.isFromPlayerOrPlayerPet = false
-	entry.nameplateShowAll = false
-	entry.timeMod = 1
-	entry.points = {}
 end
 
 -- Looks for changes to weapon enchants that we do not have cached
@@ -164,11 +145,11 @@ function PitBull4_Aura:UpdateWeaponEnchants(force)
 	-- We check that the expiration time is at least 0.2 seconds further
 	-- ahead than it was to avoid rebuilding auras for rounding errors.
 	if mh ~= old_mh or mh_count ~= old_mh_count or (mh_expiration_time and old_mh_expiration_time and mh_expiration_time - old_mh_expiration_time > 0.2) then
-		set_weapon_entry(weapon_list, mh, mh_time_left, mh_expiration_time, mh_count, INVSLOT_MAINHAND)
+		set_weapon_entry(mh, mh_time_left, mh_expiration_time, mh_count, INVSLOT_MAINHAND)
 		updated = true
 	end
 	if oh ~= old_oh or oh_count ~= old_oh_count or (oh_expiration_time and old_oh_expiration_time and oh_expiration_time - old_oh_expiration_time > 0.2) then
-		set_weapon_entry(weapon_list, oh, oh_time_left, oh_expiration_time, oh_count, INVSLOT_OFFHAND)
+		set_weapon_entry(oh, oh_time_left, oh_expiration_time, oh_count, INVSLOT_OFFHAND)
 		updated = true
 	end
 

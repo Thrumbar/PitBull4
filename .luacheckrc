@@ -130,6 +130,7 @@ globals = {
 	"GetBuildInfo",
 	"GetFriendshipReputation",
 	"GetInventoryItemLink",
+	"GetInventoryItemQuality",
 	"GetLocale",
 	"GetManagedEnvironment",
 	"GetMaxPlayerLevel",

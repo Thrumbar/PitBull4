@@ -23,9 +23,10 @@ end
 -- Update handler for tooltips.
 function Aura:UpdateTooltip()
 	if self.id then
-		-- Real Buffs
+		-- Real Buff
 		GameTooltip:SetUnitAuraByAuraInstanceID(self:GetUnit(), self.id)
 	elseif self.slot then
+		-- Weapon Enchant
 		local has_item = GameTooltip:SetInventoryItem("player", self.slot)
 		if not has_item then
 			GameTooltip:ClearLines()
@@ -34,13 +35,8 @@ function Aura:UpdateTooltip()
 			GameTooltip:Show()
 		end
 	else
-		-- Sample auras for config mode
+		-- Config Mode Sample Aura
 		GameTooltip:ClearLines()
-		-- Note that debuff_type gets localized here when displaying it
-		-- because it needs to be in English for sorting and border
-		-- purposes.  However the debuff types still need to be in our
-		-- localization tables.  They are L["Poison"], L["Magic"],
-		-- L["Disease"], L["Enrage"], L["Bleed"]
 		GameTooltip:AddDoubleLine(self.name, self.debuff_type and L[self.debuff_type] or "", 1, 0.82, 0, 1, 0.82, 0)
 		GameTooltip:AddLine(L["Sample aura created by PitBull to allow you to see the results of your configuration easily."], 1, 1, 1, 1)
 		if self.is_mine then

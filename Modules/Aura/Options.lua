@@ -138,6 +138,7 @@ PitBull4_Aura:SetDefaults({
 			width_percent = 0.50,
 			growth = "right_down",
 			sort = true,
+			sort_rule = "Default",
 			reverse = false,
 			row_spacing = 0,
 			col_spacing = 0,
@@ -158,6 +159,7 @@ PitBull4_Aura:SetDefaults({
 			width_percent = 0.50,
 			growth = "left_down",
 			sort = true,
+			sort_rule = "Default",
 			reverse = false,
 			col_spacing = 0,
 			row_spacing = 0,
@@ -1781,6 +1783,28 @@ local growth_values = {
 	down_right = L["Down then right"],
 }
 
+local sort_rule_values = {
+	Unsorted = "None",
+	Default = "Default",
+	BigDefensive = "Big Defensive",
+	Expiration = "Expiration",
+	ExpirationOnly = "Expiration Only",
+	Name = "Name",
+	NameOnly = "Name Only",
+}
+local sort_rule_sorting = { "Unsorted", "Default", "BigDefensive", "Expiration", "ExpirationOnly", "Name", "NameOnly" }
+
+local NORMAL_FONT_COLOR, WHITE_FONT_COLOR = _G.NORMAL_FONT_COLOR, _G.WHITE_FONT_COLOR
+local sort_rules_desc = ("|n%s: %s|n|n%s: %s|n|n%s: %s|n|n%s: %s|n|n%s: %s|n|n%s: %s|n|n%s: %s"):format(
+	NORMAL_FONT_COLOR:WrapTextInColorCode("None"), WHITE_FONT_COLOR:WrapTextInColorCode("Applies no sorting to auras."),
+	NORMAL_FONT_COLOR:WrapTextInColorCode("Default"), WHITE_FONT_COLOR:WrapTextInColorCode("Sorts auras according first by whether or not the aura was applied by the player, else whether or not the player can apply the aura, and finally by aura instance ID."),
+	NORMAL_FONT_COLOR:WrapTextInColorCode("Big Defensive"), WHITE_FONT_COLOR:WrapTextInColorCode("Sorts auras according first by whether or not the aura was applied by another player, else by expiration time (longest to shortest), and finally by aura instance ID."),
+	NORMAL_FONT_COLOR:WrapTextInColorCode("Expiration"), WHITE_FONT_COLOR:WrapTextInColorCode("Sorts auras according first by whether or not the aura was applied by the player, else whether or not the player can apply the aura, then by expiration time (soonest to longest, followed by permanent auras), and finally by aura instance ID."),
+	NORMAL_FONT_COLOR:WrapTextInColorCode("Expiration Only"), WHITE_FONT_COLOR:WrapTextInColorCode("Sorts auras according only to expiration time."),
+	NORMAL_FONT_COLOR:WrapTextInColorCode("Name"), WHITE_FONT_COLOR:WrapTextInColorCode("Sorts auras according first by whether or not the aura was applied by the player, else whether or not the player can apply the aura, then by spell name, and finally by aura instance ID."),
+	NORMAL_FONT_COLOR:WrapTextInColorCode("Name Only"), WHITE_FONT_COLOR:WrapTextInColorCode("Sorts auras according only their spell name.")
+)
+
 local width_type_values = {
 	percent = L["Percentage of side"],
 	fixed   = L["Fixed size"],
@@ -2363,13 +2387,15 @@ PitBull4_Aura:SetLayoutOptionsFunction(function(self)
 				name = '',
 				order = 30,
 			},
-			sort = {
-				type = 'toggle',
+			sort_rule = {
+				type = 'select',
 				name = L["Sort"],
-				desc = L["Sort auras by type and alphabetically, preferring your own auras first."],
+				desc = sort_rules_desc,
 				get = get_layout,
 				set = set_layout,
 				disabled = is_aura_disabled,
+				values = sort_rule_values,
+				sorting = sort_rule_sorting,
 				order = 31,
 			},
 			reverse = {

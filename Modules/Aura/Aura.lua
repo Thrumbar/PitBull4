@@ -13,13 +13,15 @@ PitBull4_Aura.OnProfileChanged_funcs = {}
 
 local timerFrame = CreateFrame("Frame")
 timerFrame:Hide()
+
 local timer = 0
 timerFrame:SetScript("OnUpdate",function(self, elapsed)
 	timer = timer + elapsed
-	if timer >= 0.2 then
-		PitBull4_Aura:OnUpdate()
-		timer = 0
-	end
+	if timer < 0.2 then return end
+	timer = 0
+
+	PitBull4_Aura:UpdateWeaponEnchants()
+	PitBull4_Aura:UpdateFilters()
 end)
 
 
@@ -49,7 +51,6 @@ function PitBull4_Aura:UNIT_AURA(_, unit, update_info)
 	for frame in PitBull4:IterateFrames() do
 		if frame.unit == unit then
 			if self:GetLayoutDB(frame).enabled then
-				self:UpdateAuraData(frame, update_info)
 				self:UpdateFrame(frame)
 			else
 				self:ClearFrame(frame)

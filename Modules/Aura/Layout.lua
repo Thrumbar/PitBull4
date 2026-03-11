@@ -249,18 +249,19 @@ local function layout_auras(frame, db, is_buff)
 	end
 
 	-- Allow reversal of the load order
-	local start_list, end_list, step
-	if cfg.reverse then
-		start_list = #list
-		end_list = 1
-		step = -1
-	else
-		start_list = 1
-		end_list = #list
-		step = 1
-	end
+	-- local start_list, end_list, step
+	-- if cfg.reverse then
+	-- 	start_list = #list
+	-- 	end_list = 1
+	-- 	step = -1
+	-- else
+	-- 	start_list = 1
+	-- 	end_list = #list
+	-- 	step = 1
+	-- end
 
-	for i = start_list, end_list, step do
+	-- for i = start_list, end_list, step do
+	for i = 1, #list, 1 do
 		local control = list[i]
 		local display = true
 
