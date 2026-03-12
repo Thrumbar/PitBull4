@@ -5,7 +5,10 @@ local L = PitBull4.L
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
+local GetAuraDataBySlot = C_UnitAuras.GetAuraDataBySlot
 local GetAuraDispelTypeColor = C_UnitAuras.GetAuraDispelTypeColor
+local GetAuraSlots = C_UnitAuras.GetAuraSlots
+local IsAuraFilteredOutByInstanceID = C_UnitAuras.IsAuraFilteredOutByInstanceID
 
 local new, del = PitBull4.new, PitBull4.del
 local wipe = _G.table.wipe
@@ -30,21 +33,20 @@ function PitBull4_Aura:HighlightFilterIterator(frame, db, is_buff)
 	local unit = frame.unit
 	if not unit then return end
 	local filter = is_buff and "HELPFUL" or "HARMFUL"
-	local id = 1
+	local player_filter = is_buff and "HELPFUL|PLAYER" or "HARMFUL|PLAYER"
 
 	-- Loop through the auras
-	while true do
-		local entry = C_UnitAuras.GetAuraDataByIndex(unit, id, filter)
-		if not entry then
-			-- No more auras, break the outer loop
-			break
+	local slots = {GetAuraSlots(unit, filter)}
+	for i = 2, #slots do -- continuationToken is the first return value of UnitAuraSlots
+		local entry = GetAuraDataBySlot(unit, slots[i])
+		if entry then -- Protect against GetAuraDataBySlot desyncing with GetAuraSlots
+			entry.id = entry.auraInstanceID
+			entry.isPlayerAura = not IsAuraFilteredOutByInstanceID(unit, entry.auraInstanceID, player_filter)
+			entry.isHelpfulAura = is_buff
+			entry.isHarmfulAura = not is_buff
+
+			self:HighlightFilter(db, entry, frame)
 		end
-
-		entry.index = id
-
-		self:HighlightFilter(db, entry, frame)
-
-		id = id + 1
 	end
 end
 

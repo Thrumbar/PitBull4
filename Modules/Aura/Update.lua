@@ -69,11 +69,6 @@ local function get_aura_list(list, unit, db, is_buff, frame)
 		entry.isHelpfulAura = is_buff
 		entry.isHarmfulAura = not is_buff
 
-		-- Pass the entry through to the Highlight system
-		if db.highlight then
-			PitBull4_Aura:HighlightFilter(db, entry, frame)
-		end
-
 		-- Filter the list if not true
 		if PitBull4_Aura:FilterEntry(filter_name, entry, frame) then
 			list[index] = entry
@@ -440,12 +435,9 @@ function PitBull4_Aura:UpdateAuras(frame)
 		update_auras(frame, db, true)
 	else
 		clear_auras(frame, true)
-		if highlight then
-			-- Iterate the auras for highlighting, normally
-			-- this is done as part of the aura update process
-			-- but we have to do it separately when it is disabled.
-			self:HighlightFilterIterator(frame, db, true)
-		end
+	end
+	if highlight then
+		self:HighlightFilterIterator(frame, db, true)
 	end
 
 	-- Debuffs
@@ -453,12 +445,9 @@ function PitBull4_Aura:UpdateAuras(frame)
 		update_auras(frame, db, false)
 	else
 		clear_auras(frame, false)
-		if highlight then
-			-- Iterate the auras for highlighting, normally
-			-- this is done as part of the aura update process
-			-- but we have to do it separately when it is disabled.
-			self:HighlightFilterIterator(frame, db, false)
-		end
+	end
+	if highlight then
+		self:HighlightFilterIterator(frame, db, false)
 	end
 
 	-- Finish the Highlight Filter System
