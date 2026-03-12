@@ -6,6 +6,7 @@ local L = PitBull4.L
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
 local IsAuraFilteredOutByInstanceID = C_UnitAuras.IsAuraFilteredOutByInstanceID
+local ShouldUnitComparisonBeSecret = C_Secrets.ShouldUnitComparisonBeSecret
 
 local function copy(data)
 	local t = {}
@@ -86,9 +87,11 @@ local function compare_unit(unit,op,value,frame)
 		-- return UnitCanAttack("player", unit)
 	elseif op == "is" then
 		if not unit then return false end
+		if ShouldUnitComparisonBeSecret(unit,value) then return false end
 		return UnitIsUnit(unit,value)
 	elseif op == "isnot" then
 		if not unit then return false end
+		if ShouldUnitComparisonBeSecret(unit,value) then return false end
 		return not UnitIsUnit(unit,value)
 	elseif op == "player" then
 		if not unit then return false end
