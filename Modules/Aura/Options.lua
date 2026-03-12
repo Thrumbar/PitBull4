@@ -112,16 +112,16 @@ PitBull4_Aura:SetDefaults({
 	},
 	highlight = true,
 	highlight_filters = {
-		'!H','!L','!I','!J'
+		'!H','!L', '!I',--'!J'
 	},
 	highlight_filters_color_by_type = {
-		true, true, false, false
+		true, true, false, --false
 	},
 	highlight_filters_custom_color = {
 		{ 1, 1, 1, 1},
 		{ 1, 1, 1, 1},
 		{ 1, 0, 0, 1},
-		{ 1, 0, 0, 1},
+		-- { 1, 0, 0, 1},
 	},
 	highlight_style = "border",
 	layout = {
@@ -1664,53 +1664,53 @@ PitBull4_Aura:SetDefaults({
 			display_when = "highlight",
 		},
 		['!G'] = {
-			display_name = L["Highlight: dispellable debuffs"],
+			display_name = L["Highlight: dispellable by me debuffs"], --L["Highlight: dispellable debuffs"],
 			filter_type = 'Meta',
 			filters = {'!F','@K'},
 			operators = {'&'},
 			built_in = true,
 			display_when = "highlight",
 		},
-		['!H'] = {
-			display_name = L["Highlight: dispellable by me debuffs"],
-			filter_type = 'Meta',
-			filters = {'!F','&D'},
-			operators = {'&'},
-			built_in = true,
-			display_when = "highlight",
-		},
-		['!I'] = {
-			display_name = L["Highlight: Enemy buffs"],
-			filter_type = 'Meta',
-			filters = {'@E','@A','*E'},
-			operators = {'&','&'},
-			built_in = true,
-			display_when = "highlight",
-		},
-		['!J'] = {
-			display_name = L["Highlight: Friend debuffs"],
-			filter_type = 'Meta',
-			filters = {'!F','*D'},
-			operators = {'&'},
-			built_in = true,
-			display_when = "highlight",
-		},
+		-- ['!H'] = {
+		-- 	display_name = L["Highlight: dispellable by me debuffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'!F','&D'},
+		-- 	operators = {'&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
+		-- ['!I'] = {
+		-- 	display_name = L["Highlight: Enemy buffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'@E','@A','*E'},
+		-- 	operators = {'&','&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
+		-- ['!J'] = {
+		-- 	display_name = L["Highlight: Friend debuffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'!F','*D'},
+		-- 	operators = {'&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
 		['!K'] = {
-			display_name = L["Highlight: purgeable buffs"],
+			display_name = L["Highlight: purgeable by me buffs"], -- L["Highlight: purgeable buffs"],
 			filter_type = 'Meta',
 			filters = {'@E','@A','@P'},
 			operators = {'&','&','&'},
 			built_in = true,
 			display_when = "highlight",
 		},
-		['!L'] = {
-			display_name = L["Highlight: purgeable by me buffs"],
-			filter_type = 'Meta',
-			filters = {'@E','@A','&P'},
-			operators = {'&','&','&'},
-			built_in = true,
-			display_when = "highlight",
-		},
+		-- ['!L'] = {
+		-- 	display_name = L["Highlight: purgeable by me buffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'@E','@A','&P'},
+		-- 	operators = {'&','&','&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
 		['!M'] = {
 			-- NameplateBuffContainerMixin:ShouldShowBuff
 			display_name = L["Blizzard buffs, nameplate"],
