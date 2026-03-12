@@ -5,6 +5,9 @@ local L = PitBull4.L
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
+local GetAuraDispelTypeColor = C_UnitAuras.GetAuraDispelTypeColor
+
+local new, del = PitBull4.new, PitBull4.del
 local wipe = _G.table.wipe
 
 local HighlightNormal_path = [[Interface\AddOns\PitBull4\Modules\Aura\HighlightNormal]]
@@ -12,35 +15,17 @@ local HighlightBorder_path = [[Interface\AddOns\PitBull4\Modules\Aura\HighlightB
 local HighlightThinBorder_path = [[Interface\AddOns\PitBull4\Modules\Aura\HighlightThinBorder]]
 
 -- Handle the results table used for tracking the priority of auras to highlight
-local results, pool = {}, {}
-
-local function new_result()
-	local t = next(pool)
-	if t then
-		pool[t] = nil
-	else
-		t = {}
-	end
-	return t
-end
-
-local function del_result(t)
-	wipe(t)
-	pool[t] = true
-	return nil
-end
+local results = {}
 
 -- Clean the results table before starting a highlight filter
-function PitBull4_Aura:HighlightFilterStart()
+function PitBull4_Aura:ResetHighlightFilter()
 	for i = 1, #results do
-		results[i] = del_result(results[i])
+		results[i] = del(results[i])
 	end
 end
 
--- Replacement iterator for use when auras aren't being displayed on
--- a frame we want to highlight.  Arguments mirror the update_auras()
--- function in Update.lua.  TODO: Make get_aura_list() in Update.lua
--- and this use the same iterator.
+-- Replacement iterator for use when auras aren't being displayed on a frame we want to highlight.
+-- Arguments mirror the update_auras() function in Update.lua.
 function PitBull4_Aura:HighlightFilterIterator(frame, db, is_buff)
 	local unit = frame.unit
 	if not unit then return end
@@ -64,13 +49,9 @@ function PitBull4_Aura:HighlightFilterIterator(frame, db, is_buff)
 end
 
 -- Takes a single aura entry and runs the Highlight Filter on it.
--- Storing the results in the results table for use by SetHighlight()
--- later
+-- Storing the results in the results table for use by SetHighlight() later
 function PitBull4_Aura:HighlightFilter(db, entry, frame)
 	local highlight_filters = db.highlight_filters
-	local highlight_filters_color_by_type = db.highlight_filters_color_by_type
-	local highlight_filters_custom_color = db.highlight_filters_custom_color
-	local dispel_color_curve = self.dispel_color_curve
 
 	-- Iterate the highlight filters
 	for id = 1, #highlight_filters do
@@ -83,18 +64,18 @@ function PitBull4_Aura:HighlightFilter(db, entry, frame)
 				local filter_result = filter_func(filter_name, entry, frame)
 				if filter_result then
 					-- Setup an entry in our result table
-					local result = new_result()
+					local result = new()
 					result.priority = id
 
 					-- Determine the color for the match
-					if highlight_filters_color_by_type[id] then
-						local color = entry.auraInstanceID and C_UnitAuras.GetAuraDispelTypeColor(frame.unit, entry.auraInstanceID, dispel_color_curve)
+					if db.highlight_filters_color_by_type[id] then
+						local color = entry.id and GetAuraDispelTypeColor(frame.unit, entry.id, self.dispel_color_curve)
 						if color == nil then
-							color = dispel_color_curve:Evaluate(0)
+							color = self.dispel_color_curve:Evaluate(0)
 						end
 						result.color = {color:GetRGB()}
 					else
-						result.color = highlight_filters_custom_color[id]
+						result.color = db.highlight_filters_custom_color[id]
 					end
 
 					-- Add the entry

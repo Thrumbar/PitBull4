@@ -6,6 +6,9 @@ local L = PitBull4.L
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
+local GetAuraApplicationDisplayCount = C_UnitAuras.GetAuraApplicationDisplayCount
+local GetAuraDuration = C_UnitAuras.GetAuraDuration
+local GetAuraDispelTypeColor = C_UnitAuras.GetAuraDispelTypeColor
 local GetUnitAuras = C_UnitAuras.GetUnitAuras
 local IsAuraFilteredOutByInstanceID = C_UnitAuras.IsAuraFilteredOutByInstanceID
 
@@ -27,6 +30,7 @@ local INVSLOT_OFFHAND = _G.INVSLOT_OFFHAND
 local sample_buff_icon   = [[Interface\Icons\Spell_ChargePositive]]
 local sample_debuff_icon = [[Interface\Icons\Spell_ChargeNegative]]
 local sample_debuff_types = { "Poison", "Magic", "Disease", "Curse", "Enrage", "Bleed", "None" }
+local sample_duration = C_DurationUtil.CreateDuration()
 
 -- table of dispel types we can dispel
 local can_dispel = PitBull4_Aura.can_dispel.player
@@ -85,8 +89,6 @@ local function get_aura_list(list, unit, db, is_buff, frame)
 	return list
 end
 
-local zero_duration = C_DurationUtil.CreateDuration()
-
 -- Fills up to the maximum number of auras with sample auras
 local function get_aura_list_sample(list, unit, max, db, is_buff, is_player)
 	-- figure the slot to use for the mainhand and offhand slots
@@ -134,7 +136,7 @@ local function get_aura_list_sample(list, unit, max, db, is_buff, is_player)
 		entry.isHarmfulAura = not is_buff
 		entry.icon = is_buff and sample_buff_icon or sample_debuff_icon
 		entry.applications = i -- count set to index to make order show
-		entry.duration = zero_duration
+		entry.duration = sample_duration
 	end
 end
 
@@ -157,8 +159,8 @@ local function aura_sort(a, b)
 		return a_slot < b_slot
 	end
 
+	-- player auras (skip for NameOnly/ExpirationOnly)
 	if not aura_sort__is_only then
-		-- player auras
 		local a_mine, b_mine = a.isPlayerAura, b.isPlayerAura
 		if a_mine ~= b_mine then
 			if a_mine then
@@ -204,31 +206,32 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 		aura_controls[i] = control
 	end
 
+	local unit = frame.unit
 	local is_mine = aura.isPlayerAura
 	local who = is_mine and "my" or "other"
-	-- No way to know who applied a weapon buff so we have a separate
-	-- category for them.
+	-- No way to know who applied a weapon buff so we have a separate category for them.
 	if aura.weaponEnchantSlot then who = "weapon" end
 	local rule = who .. '_' .. (aura.isHelpfulAura and "buffs" or "debuffs")
 
 	local layout = aura.isHelpfulAura and db.layout.buff or db.layout.debuff
 	control:SetFrameLevel(frame:GetFrameLevel() + layout.frame_level)
 
+	local debuff_type_color
 	control.index = aura.index
 	control.id = aura.auraInstanceID
 	control.is_mine = aura.isPlayerAura
 	control.is_buff = aura.isHelpfulAura
 	control.slot = aura.weaponEnchantSlot
 	if aura.auraInstanceID then
-		control.duration = C_UnitAuras.GetAuraDuration(frame.unit, aura.auraInstanceID)
-		control.applications = C_UnitAuras.GetAuraApplicationDisplayCount(frame.unit, aura.auraInstanceID)
-		control.debuff_type_color = C_UnitAuras.GetAuraDispelTypeColor(frame.unit, aura.auraInstanceID, dispel_color_curve)
+		control.duration = GetAuraDuration(unit, aura.auraInstanceID)
+		control.applications = GetAuraApplicationDisplayCount(unit, aura.auraInstanceID)
+		debuff_type_color = GetAuraDispelTypeColor(unit, aura.auraInstanceID, dispel_color_curve)
 	else -- used in config mode
 		control.name = aura.name
 		control.duration = aura.duration
 		control.applications = aura.applications
 		control.debuff_type = aura.debuffType
-		control.debuff_type_color = aura.debuffType and dispel_color_curve:Evaluate(dispel_types[aura.debuffType])
+		debuff_type_color = aura.debuffType and dispel_color_curve:Evaluate(dispel_types[aura.debuffType])
 	end
 
 	local class_db = frame.classification_db
@@ -240,7 +243,6 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 
 	local texture = control.texture
 	texture:SetTexture(aura.icon)
-
 	if not frame.masque_group then
 		if db.zoom_aura then
 			texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -249,9 +251,16 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 		end
 	end
 
-	local texts = db.texts[rule]
+	if db.cooldown[rule] then
+		control.cooldown:SetCooldownFromDurationObject(control.duration)
+		control.cooldown:Show()
+	else
+		control.cooldown:Hide()
+	end
 
-	local count_db = texts.count
+	local texts_db = db.texts[rule]
+
+	local count_db = texts_db.count
 	local font, font_size = frame:GetFont(count_db.font, count_db.size)
 	local count_text = control.count_text
 	count_text:ClearAllPoints()
@@ -260,22 +269,14 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	count_text:SetTextColor(unpack(count_db.color))
 	count_text:SetText(control.applications)
 
-	if db.cooldown[rule] then
-		control.cooldown:SetCooldownFromDurationObject(control.duration)
-		control.cooldown:Show()
-	else
-		control.cooldown:Hide()
-	end
-
 	if db.cooldown_text[rule] then
 		local cooldown_text = control.cooldown_text
-		local cooldown_text_db = texts.cooldown_text
+		local cooldown_text_db = texts_db.cooldown_text
 		font,font_size = frame:GetFont(cooldown_text_db.font, cooldown_text_db.size)
 		cooldown_text:SetFont(font, font_size, "OUTLINE")
 		cooldown_text:ClearAllPoints()
 		cooldown_text:SetPoint(cooldown_text_db.anchor, control, cooldown_text_db.anchor, cooldown_text_db.offset_x, cooldown_text_db.offset_y)
-		local color_by_time = cooldown_text_db.color_by_time
-		if not color_by_time then
+		if not cooldown_text_db.color_by_time then
 			cooldown_text:SetTextColor(unpack(cooldown_text_db.color))
 		end
 		cooldown_text.color_by_time = cooldown_text_db.color_by_time
@@ -294,6 +295,7 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 		local border = control.border
 		local colors = PitBull4_Aura.db.profile.global.colors
 		border:Show()
+
 		local color_type = border_db.color_type
 		if color_type == "weapon" and aura.weaponEnchantQuality then
 			local r, g, b = GetItemQualityColor(aura.weaponEnchantQuality)
@@ -301,7 +303,7 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 
 		elseif color_type == "type" then
 			-- Use the Other color if there's not a color for the specific debuff type.
-			local color = control.debuff_type_color or dispel_color_curve:Evaluate(0)
+			local color = debuff_type_color or dispel_color_curve:Evaluate(0)
 			border:SetVertexColor(color:GetRGB())
 
 		elseif color_type == "caster" then
@@ -430,7 +432,7 @@ function PitBull4_Aura:UpdateAuras(frame)
 
 	-- Start the Highlight Filter System
 	if highlight then
-		self:HighlightFilterStart()
+		self:ResetHighlightFilter()
 	end
 
 	-- Buffs
