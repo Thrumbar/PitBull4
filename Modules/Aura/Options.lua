@@ -404,15 +404,9 @@ PitBull4_Aura:SetDefaults({
 		},
 		['@K'] = {
 			display_name = L["Dispellable"],
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = {
-				Curse = true,
-				Poison = true,
-				Magic = true,
-				Enrage = true,
-				Disease = true,
-			},
+			filter_type = 'Filter String',
+			filter_string = "RAID_PLAYER_DISPELLABLE",
+			disabled = true,
 			built_in = true,
 		},
 		['@L'] = {
@@ -425,12 +419,9 @@ PitBull4_Aura:SetDefaults({
 		},
 		['@P'] = {
 			display_name = L["Purgeable"],
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = {
-				Magic = true,
-				Enrage = true,
-			},
+			filter_type = 'Filter String',
+			filter_string = "RAID_PLAYER_DISPELLABLE",
+			disabled = true,
 			built_in = true,
 		},
 		['@Q'] = {

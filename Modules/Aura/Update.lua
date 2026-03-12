@@ -6,6 +6,9 @@ local L = PitBull4.L
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
+local GetUnitAuras = C_UnitAuras.GetUnitAuras
+local IsAuraFilteredOutByInstanceID = C_UnitAuras.IsAuraFilteredOutByInstanceID
+
 local GetItemInfo = C_Item.GetItemInfo
 local GetItemQualityColor = C_Item.GetItemQualityColor
 
@@ -55,16 +58,10 @@ local function get_aura_list(list, unit, db, is_buff, frame)
 
 	-- Loop through the auras
 	local index = 1
-	while true do
-		local entry = C_UnitAuras.GetUnitAuras(unit, filter, max_auras, sort_rule, sort_direction)
-		if not entry then
-			-- No more auras, break the outer loop
-			break
-		end
-		list[index] = entry
-
+	for i, entry in next, GetUnitAuras(unit, filter, max_auras, sort_rule, sort_direction) do
 		entry.index = index
-		entry.isPlayerAura = not C_UnitAuras.IsAuraFilteredOutByInstanceID(unit, entry.auraInstanceID, player_filter)
+		entry.id = entry.auraInstanceID
+		entry.isPlayerAura = not IsAuraFilteredOutByInstanceID(unit, entry.auraInstanceID, player_filter)
 		entry.isHelpfulAura = is_buff
 		entry.isHarmfulAura = not is_buff
 
@@ -75,7 +72,8 @@ local function get_aura_list(list, unit, db, is_buff, frame)
 
 		-- Filter the list if not true
 		if PitBull4_Aura:FilterEntry(filter_name, entry, frame) then
-			index = index + 1 -- increment list index when shown, otherwise reuse the index when filtered
+			list[index] = entry
+			index = index + 1
 		end
 	end
 

@@ -5,6 +5,8 @@ local L = PitBull4.L
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
+local IsAuraFilteredOutByInstanceID = C_UnitAuras.IsAuraFilteredOutByInstanceID
+
 local function copy(data)
 	local t = {}
 	for k, v in pairs(data) do
@@ -335,7 +337,9 @@ PitBull4_Aura:RegisterFilterType('Meta',L["Meta"],meta_filter,meta_filter_option
 -- Name, allows filtering by the aura name
 local function name_filter(self, entry)
 	local cfg = PitBull4_Aura:GetFilterDB(self)
-	if cfg.name_list[entry.name] then
+	if entry.name == nil or issecretvalue(entry.name) then -- XXX highlight uses extra lists
+		return not cfg.whitelist
+	elseif cfg.name_list[entry.name] then
 		if cfg.whitelist then
 			return true
 		else
@@ -850,12 +854,10 @@ local my_units = {
 
 -- Mine, Filter by if you cast it or not.
 local function mine_filter(self, entry)
-	-- local caster = entry.sourceUnit
-	-- local is_mine = caster and (UnitIsUnit("player", caster) or UnitIsOwnerOrControllerOfUnit("player", caster))
 	if PitBull4_Aura:GetFilterDB(self).mine then
-		return my_units[entry.sourceUnit]
+		return entry.isPlayerAura
 	else
-		return not my_units[entry.sourceUnit]
+		return not entry.isPlayerAura
 	end
 end
 PitBull4_Aura:RegisterFilterType('Mine',L["Mine"],mine_filter, function(self,options)
@@ -946,9 +948,9 @@ end)
 -- Buff
 local function buff_filter(self, entry)
 	if PitBull4_Aura:GetFilterDB(self).buff then
-		return entry.isHelpful
+		return entry.isHelpfulAura
 	else
-		return entry.isHarmful
+		return entry.isHarmfulAura
 	end
 end
 PitBull4_Aura:RegisterFilterType('Buff',L["Buff"],buff_filter, function(self,options)
@@ -1649,6 +1651,26 @@ PitBull4_Aura:RegisterFilterType('Global nameplate',L["Global nameplate"],global
 			PitBull4_Aura:UpdateAll()
 		end,
 		values = bool_values,
+		order = 1,
+	}
+end)
+
+local function filter_string_filter(self, entry, frame)
+	local filter_string = PitBull4_Aura:GetFilterDB(self).filter_string
+	return not C_UnitAuras.IsAuraFilteredOutByInstanceID(frame.unit, entry.id, filter_string)
+end
+PitBull4_Aura:RegisterFilterType("Filter String","Filter String",filter_string_filter,function(self,options)
+	options.filter_string_filter = {
+		type = "input",
+		name = "Filter String",
+		desc = "Filter by aura filter string, eg. \"HELPFUL\" or \"HARMFUL\".",
+		get = function(info)
+			return PitBull4_Aura:GetFilterDB(self).filter_string or ""
+		end,
+		set = function(info, value)
+			PitBull4_Aura:GetFilterDB(self).filter_string = value
+			PitBull4_Aura:UpdateAll()
+		end,
 		order = 1,
 	}
 end)
