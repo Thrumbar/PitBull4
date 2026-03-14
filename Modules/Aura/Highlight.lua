@@ -1,4 +1,3 @@
--- Highlight.lua : Code to handle showing a highlight on a frame for an aura.
 
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
@@ -57,33 +56,25 @@ function PitBull4_Aura:HighlightFilter(db, entry, frame)
 
 	-- Iterate the highlight filters
 	for id = 1, #highlight_filters do
-		local filter_name = highlight_filters[id]
-		if filter_name and filter_name ~= "" then
-			local filter = self:GetFilterDB(filter_name)
-			if filter then
-				-- Run the filter and capture the result
-				local filter_func = self.filter_types[filter.filter_type].filter_func
-				local filter_result = filter_func(filter_name, entry, frame)
-				if filter_result then
-					-- Setup an entry in our result table
-					local result = new()
-					result.priority = id
+		local filter_result = self:FilterEntry(highlight_filters[id], entry, frame, true)
+		if filter_result then
+			-- Setup an entry in our result table
+			local result = new()
+			result.priority = id
 
-					-- Determine the color for the match
-					if db.highlight_filters_color_by_type[id] then
-						local color = entry.id and GetAuraDispelTypeColor(frame.unit, entry.id, self.dispel_color_curve)
-						if color == nil then
-							color = self.dispel_color_curve:Evaluate(0)
-						end
-						result.color = {color:GetRGB()}
-					else
-						result.color = db.highlight_filters_custom_color[id]
-					end
-
-					-- Add the entry
-					results[#results + 1] = result
+			-- Determine the color for the match
+			if db.highlight_filters_color_by_type[id] then
+				local color = entry.id and GetAuraDispelTypeColor(frame.unit, entry.id, self.dispel_color_curve)
+				if color == nil then
+					color = self.dispel_color_curve:Evaluate(0)
 				end
+				result.color = {color:GetRGB()}
+			else
+				result.color = db.highlight_filters_custom_color[id]
 			end
+
+			-- Add the entry
+			results[#results + 1] = result
 		end
 	end
 end

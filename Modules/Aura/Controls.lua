@@ -1,4 +1,3 @@
--- Controls.lua : Implement the controls we need for the Aura module.
 
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L

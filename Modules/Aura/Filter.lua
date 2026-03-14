@@ -1,10 +1,10 @@
--- Filter.lua : Code to handle Filtering the Auras.
 
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
+local ShouldUnitAuraInstanceBeSecret = C_Secrets.ShouldUnitAuraInstanceBeSecret
 local wow_retail = PitBull4.wow_retail
 
 local player_class = UnitClassBase("player")
@@ -605,13 +605,11 @@ PitBull4_Aura.pet_buffs = pet_buffs
 PitBull4_Aura.enemy_debuffs = enemy_debuffs
 PitBull4_Aura.extra_buffs = extra_buffs
 
-local ShouldUnitAuraInstanceBeSecret = C_Secrets.ShouldUnitAuraInstanceBeSecret
-
-function PitBull4_Aura:FilterEntry(name, entry, frame)
+function PitBull4_Aura:FilterEntry(name, entry, frame, allow_secrets)
 	if not name or name == "" then return true end
 	local filter = self:GetFilterDB(name)
 	if not filter then return true end
-	if ShouldUnitAuraInstanceBeSecret(frame.unit, entry.id) then return true end
+	if not allow_secrets and ShouldUnitAuraInstanceBeSecret(frame.unit, entry.id) then return true end
 	local filter_func = self.filter_types[filter.filter_type].filter_func
 	return filter_func(name, entry, frame)
 end

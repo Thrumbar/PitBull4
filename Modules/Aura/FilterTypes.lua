@@ -1,4 +1,3 @@
--- FilterTypes.lua: Code to implement the various filter types
 
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
@@ -68,7 +67,7 @@ local unit_values = {
 	['nocombat'] = L["is not in combat"],
 }
 
-local function compare_unit(unit,op,value,frame)
+local function compare_unit(unit,op,value)
 	if op == "==" then
 		return unit == value
 	elseif op == "~=" then
@@ -221,8 +220,11 @@ local function meta_filter(self, entry, frame)
 	-- Build our enviornment for the function
 	local funcs = {}
 	local env = {funcs=funcs, names=names}
-	for i=1,#names do
-		funcs[i] = filter_types[filters[names[i]].filter_type].filter_func
+	for i = 1, #names do
+		local filter_name = names[i]
+		if filters[filter_name] then
+			funcs[i] = filter_types[filters[filter_name].filter_type].filter_func
+		end
 	end
 
 	-- Now build the lua we're going to use to create the function
@@ -641,6 +643,7 @@ local function duration_filter(self, entry)
 	local value = cfg.value
 	local units = cfg.time_unit
 	local duration = entry.duration
+	if duration == nil or issecretvalue(entry.duration) then return false end
 	if units == 'h' then
 		value = value * 3600
 	elseif units == 'm' then
@@ -982,7 +985,7 @@ end)
 -- Unit
 local function unit_filter(self, entry, frame)
 	local db = PitBull4_Aura:GetFilterDB(self)
-	return compare_unit(frame.unit,db.unit_operator,db.unit,frame)
+	return compare_unit(frame.unit,db.unit_operator,db.unit)
 end
 PitBull4_Aura:RegisterFilterType('Unit',L["Unit"],unit_filter,function(self,options)
 	options.unit_operator = {

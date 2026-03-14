@@ -1,5 +1,3 @@
--- Update.lua : Code to collect the auras on a unit, create the
--- aura frames and set the data to display the auras.
 
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
@@ -32,9 +30,6 @@ local sample_debuff_icon = [[Interface\Icons\Spell_ChargeNegative]]
 local sample_debuff_types = { "Poison", "Magic", "Disease", "Curse", "Enrage", "Bleed", "None" }
 local sample_duration = C_DurationUtil.CreateDuration()
 
--- table of dispel types we can dispel
-local can_dispel = PitBull4_Aura.can_dispel.player
-
 -- color curve for the dispel type
 local dispel_color_curve = C_CurveUtil.CreateColorCurve()
 dispel_color_curve:SetType(Enum.LuaCurveType.Step)
@@ -62,7 +57,7 @@ local function get_aura_list(list, unit, db, is_buff, frame)
 
 	-- Loop through the auras
 	local index = 1
-	for i, entry in next, GetUnitAuras(unit, filter, max_auras, sort_rule, sort_direction) do
+	for _, entry in next, GetUnitAuras(unit, filter, max_auras, sort_rule, sort_direction) do
 		entry.index = index
 		entry.id = entry.auraInstanceID
 		entry.isPlayerAura = not IsAuraFilteredOutByInstanceID(unit, entry.auraInstanceID, player_filter)
@@ -124,7 +119,7 @@ local function get_aura_list_sample(list, unit, max, db, is_buff, is_player)
 			entry.weaponEnchantSlot = nil -- not a weapon enchant
 			entry.weaponEnchantQuality = nil -- no quality color
 			entry.name = is_buff and L["Sample Buff"] or L["Sample Debuff"]
-			entry.debuffType = sample_debuff_types[(i - 1) % #sample_debuff_types]
+			entry.debuffType = dispel_types[sample_debuff_types[(i - 1) % #sample_debuff_types]]
 			entry.isPlayerAura = (i - num_entries < 5) and true or false -- (show 4 player entries)
 		end
 		entry.isHelpfulAura = is_buff
@@ -211,7 +206,6 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	local layout = aura.isHelpfulAura and db.layout.buff or db.layout.debuff
 	control:SetFrameLevel(frame:GetFrameLevel() + layout.frame_level)
 
-	local debuff_type_color
 	control.index = aura.index
 	control.id = aura.auraInstanceID
 	control.is_mine = aura.isPlayerAura
@@ -219,14 +213,12 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	control.slot = aura.weaponEnchantSlot
 	if aura.auraInstanceID then
 		control.duration = GetAuraDuration(unit, aura.auraInstanceID)
-		control.applications = GetAuraApplicationDisplayCount(unit, aura.auraInstanceID)
-		debuff_type_color = GetAuraDispelTypeColor(unit, aura.auraInstanceID, dispel_color_curve)
+		control.count = GetAuraApplicationDisplayCount(unit, aura.auraInstanceID)
 	else -- used in config mode
 		control.name = aura.name
 		control.duration = aura.duration
-		control.applications = aura.applications
+		control.count = aura.applications
 		control.debuff_type = aura.debuffType
-		debuff_type_color = aura.debuffType and dispel_color_curve:Evaluate(dispel_types[aura.debuffType])
 	end
 
 	local class_db = frame.classification_db
@@ -247,8 +239,7 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	end
 
 	if db.cooldown[rule] then
-		control.cooldown:SetCooldownFromDurationObject(control.duration)
-		control.cooldown:Show()
+		control.cooldown:SetCooldownFromDurationObject(control.duration, true)
 	else
 		control.cooldown:Hide()
 	end
@@ -262,7 +253,7 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	count_text:SetPoint(count_db.anchor, control, count_db.anchor, count_db.offset_x, count_db.offset_y)
 	count_text:SetFont(font, font_size, "OUTLINE")
 	count_text:SetTextColor(unpack(count_db.color))
-	count_text:SetText(control.applications)
+	count_text:SetText(control.count)
 
 	if db.cooldown_text[rule] then
 		local cooldown_text = control.cooldown_text
@@ -298,7 +289,15 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 
 		elseif color_type == "type" then
 			-- Use the Other color if there's not a color for the specific debuff type.
-			local color = debuff_type_color or dispel_color_curve:Evaluate(0)
+			local color = nil
+			if aura.auraInstanceID then
+				color = GetAuraDispelTypeColor(unit, aura.auraInstanceID, dispel_color_curve)
+			elseif aura.debuffType then
+				color = dispel_color_curve:Evaluate(aura.debuffType)
+			end
+			if color == nil then
+				color = dispel_color_curve:Evaluate(0)
+			end
 			border:SetVertexColor(color:GetRGB())
 
 		elseif color_type == "caster" then

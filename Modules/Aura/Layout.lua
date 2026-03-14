@@ -1,4 +1,3 @@
--- Layout.lua : Code to size and position the aura frames.
 
 local PitBull4 = _G.PitBull4
 

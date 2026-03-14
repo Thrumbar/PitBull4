@@ -1,4 +1,3 @@
--- FilterEditor.lua: Code to implement the Filter Editor.
 do return end
 
 local PitBull4 = _G.PitBull4

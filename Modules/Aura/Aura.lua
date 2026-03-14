@@ -1,4 +1,3 @@
--- Aura.lua : Core setup of the Aura module and event processing
 
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L

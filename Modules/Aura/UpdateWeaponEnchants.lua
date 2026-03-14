@@ -1,3 +1,4 @@
+
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
 
@@ -98,11 +99,9 @@ end
 -- weapon enchant is first seen.  Other arua changes for the player
 -- simply cause the weapon enchant data to be copied again without
 -- recalculation.
-function PitBull4_Aura:UpdateWeaponEnchants(force)
+function PitBull4_Aura:UpdateWeaponEnchants()
 	local updated = false
-	if force then
-		wipe(weapon_list)
-	end
+
 	local mh, mh_time_left, mh_count, _, oh, oh_time_left, oh_count = GetWeaponEnchantInfo()
 	local current_time = GetTime()
 	local mh_entry = weapon_list[INVSLOT_MAINHAND]
