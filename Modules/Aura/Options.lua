@@ -102,18 +102,16 @@ PitBull4_Aura:SetDefaults({
 			color_type = 'weapon',
 		},
 	},
-	highlight = true,
+	highlight = false,
 	highlight_filters = {
-		'!H','!L', '!I',--'!J'
+		-- '!H','!L',
 	},
 	highlight_filters_color_by_type = {
-		true, true, false, --false
+		-- true, true,
 	},
 	highlight_filters_custom_color = {
-		{ 1, 1, 1, 1},
-		{ 1, 1, 1, 1},
-		{ 1, 0, 0, 1},
-		-- { 1, 0, 0, 1},
+		-- { 1, 1, 1, 1},
+		-- { 1, 1, 1, 1},
 	},
 	highlight_style = "border",
 	layout = {
@@ -267,7 +265,7 @@ PitBull4_Aura:SetDefaults({
 		-- ! Master filters
 		-- #
 		-- %
-		-- & Class map filters
+		-- &
 		-- *
 		-- + Death Knight
 		-- ,, Demon Hunter
@@ -287,13 +285,7 @@ PitBull4_Aura:SetDefaults({
 		-- New classes and races are being added with two characters
 		-- since there is no room to add them otherwise.
 		--
-		-- The 2nd character places it within the proper order
-		-- under those major categories.  That said the following
-		-- are generally true
-		-- 3 can dispel
-		-- 7 can purge
-		--
-		-- This is necessary to get the sort order proper for the
+		-- This is all necessary to get the sort order proper for the
 		-- drop down boxes while using a value that is not localized
 		['@I'] = {
 			display_name = L["True"],
@@ -457,195 +449,6 @@ PitBull4_Aura:SetDefaults({
 			disabled = true,
 			built_in = true,
 		},
-		[',3'] = {
-			display_name = L["%s can dispel"]:format(LN.DRUID),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_dispel.DRUID,
-			built_in = true,
-		},
-		['--3'] = {
-			display_name = L["%s can dispel"]:format(LN.EVOKER),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_dispel.EVOKER,
-			built_in = true,
-		},
-		['.3'] = {
-			display_name = L["%s can dispel"]:format(LN.MAGE),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_dispel.MAGE,
-			built_in = true,
-		},
-		['//3'] = {
-			display_name = L["%s can dispel"]:format(LN.MONK),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_dispel.MONK,
-			built_in = true,
-		},
-		['/3'] = {
-			display_name = L["%s can dispel"]:format(LN.PALADIN),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_dispel.PALADIN,
-			built_in = true,
-		},
-		['03'] = {
-			display_name = L["%s can dispel"]:format(LN.PRIEST),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_dispel.PRIEST,
-			built_in = true,
-		},
-		['23'] = {
-			display_name = L["%s can dispel"]:format(LN.SHAMAN),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_dispel.SHAMAN,
-			built_in = true,
-		},
-		['33'] = {
-			display_name = L["%s can dispel"]:format(LN.WARLOCK),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_dispel.WARLOCK,
-			built_in = true,
-		},
-		['+7'] = {
-			display_name = L["%s can purge"]:format(LN.DEATHKNIGHT),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.DEATHKNIGHT,
-			built_in = true,
-		},
-		[',7'] = {
-			display_name = L["%s can purge"]:format(LN.DRUID),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.DRUID,
-			built_in = true,
-		},
-		[',,7'] = {
-			display_name = L["%s can purge"]:format(LN.DEMONHUNTER),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.DEMONHUNTER,
-			built_in = true,
-		},
-		['--7'] = {
-			display_name = L["%s can purge"]:format(LN.EVOKER),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.EVOKER,
-			built_in = true,
-		},
-		['-7'] = {
-			display_name = L["%s can purge"]:format(LN.HUNTER),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.HUNTER,
-			built_in = true,
-		},
-		['.7'] = {
-			display_name = L["%s can purge"]:format(LN.MAGE),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.MAGE,
-			built_in = true,
-		},
-		['//7'] = {
-			display_name = L["%s can purge"]:format(LN.MONK),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.MONK,
-			built_in = true,
-		},
-		['/7'] = {
-			display_name = L["%s can purge"]:format(LN.PALADIN),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.PALADIN,
-			built_in = true,
-		},
-		['07'] = {
-			display_name = L["%s can purge"]:format(LN.PRIEST),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.PRIEST,
-			built_in = true,
-		},
-		['17'] = {
-			display_name = L["%s can purge"]:format(LN.ROGUE),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.ROGUE,
-			built_in = true,
-		},
-		['27'] = {
-			display_name = L["%s can purge"]:format(LN.SHAMAN),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.SHAMAN,
-			built_in = true,
-		},
-		['37'] = {
-			display_name = L["%s can purge"]:format(LN.WARLOCK),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.WARLOCK,
-			built_in = true,
-		},
-		['47'] = {
-			display_name = L["%s can purge"]:format(LN.WARRIOR),
-			filter_type = 'Aura Type',
-			whitelist = true,
-			aura_type_list = can_purge.WARRIOR,
-			built_in = true,
-		},
-		['&D'] = {
-			display_name = L["My class can dispel"],
-			filter_type = 'Map',
-			map_type = 'class',
-			map = {
-				['DEATHKNIGHT'] = '@J',
-				['DEMONHUNTER'] = '@J',
-				['DRUID'] = ',3',
-				['EVOKER'] = '--3',
-				['HUNTER'] = '@J',
-				['MAGE'] = '.3',
-				['MONK'] = '//3',
-				['PALADIN'] = '/3',
-				['PRIEST'] = '03',
-				['ROGUE'] = '@J',
-				['SHAMAN'] = '23',
-				['WARLOCK'] = '33',
-				['WARRIOR'] = '@J',
-			},
-			built_in = true,
-		},
-		['&P'] = {
-			display_name = L["My class can purge"],
-			filter_type = 'Map',
-			map_type = 'class',
-			map = {
-				['DEATHKNIGHT'] = '+7',
-				['DEMONHUNTER'] = ',,7',
-				['DRUID'] = ',7',
-				['EVOKER'] = '--7',
-				['HUNTER'] = '-7',
-				['MAGE'] = '.7',
-				['MONK'] = '//7',
-				['PALADIN'] = '/7',
-				['PRIEST'] = '07',
-				['ROGUE'] = '17',
-				['SHAMAN'] = '27',
-				['WARLOCK'] = '37',
-				['WARRIOR'] = '47',
-			},
-			built_in = true,
-		},
 		['!B'] = {
 			display_name = L["Default buffs"],
 			filter_type = 'Meta',
@@ -678,46 +481,46 @@ PitBull4_Aura:SetDefaults({
 			built_in = true,
 			display_when = "debuff",
 		},
-		['!F'] = {
-			display_name = L["Highlight: all friend debuffs"],
-			filter_type = 'Meta',
-			filters = {'@D','@B'},
-			operators = {'&'},
-			built_in = true,
-			display_when = "highlight",
-		},
-		['!G'] = {
-			display_name = L["Highlight: dispellable debuffs"],
-			filter_type = 'Meta',
-			filters = {'!F','@K'},
-			operators = {'&'},
-			built_in = true,
-			display_when = "highlight",
-		},
-		['!H'] = {
-			display_name = L["Highlight: dispellable by me debuffs"],
-			filter_type = 'Meta',
-			filters = {'!F','&D'},
-			operators = {'&'},
-			built_in = true,
-			display_when = "highlight",
-		},
-		['!K'] = {
-			display_name = L["Highlight: purgeable buffs"],
-			filter_type = 'Meta',
-			filters = {'@E','@A','@P'},
-			operators = {'&','&','&'},
-			built_in = true,
-			display_when = "highlight",
-		},
-		['!L'] = {
-			display_name = L["Highlight: purgeable by me buffs"],
-			filter_type = 'Meta',
-			filters = {'@E','@A','&P'},
-			operators = {'&','&','&'},
-			built_in = true,
-			display_when = "highlight",
-		},
+		-- ['!F'] = {
+		-- 	display_name = L["Highlight: all friend debuffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'@D','@B'},
+		-- 	operators = {'&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
+		-- ['!G'] = {
+		-- 	display_name = L["Highlight: dispellable debuffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'!F','@K'},
+		-- 	operators = {'&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
+		-- ['!H'] = {
+		-- 	display_name = L["Highlight: dispellable by me debuffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'!F','&D'},
+		-- 	operators = {'&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
+		-- ['!K'] = {
+		-- 	display_name = L["Highlight: purgeable buffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'@E','@A','@P'},
+		-- 	operators = {'&','&','&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
+		-- ['!L'] = {
+		-- 	display_name = L["Highlight: purgeable by me buffs"],
+		-- 	filter_type = 'Meta',
+		-- 	filters = {'@E','@A','&P'},
+		-- 	operators = {'&','&','&'},
+		-- 	built_in = true,
+		-- 	display_when = "highlight",
+		-- },
 		['!M'] = {
 			-- NameplateBuffContainerMixin:ShouldShowBuff
 			display_name = L["Blizzard buffs, nameplate"],
