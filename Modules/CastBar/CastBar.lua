@@ -8,7 +8,15 @@ local EXAMPLE_ICON = 136222 -- Spell_Shadow_Teleport
 local PitBull4_CastBar = PitBull4:NewModule("CastBar")
 
 local new, del = PitBull4.new, PitBull4.del
-local EvaluateColorFromBoolean = C_CurveUtil.EvaluateColorFromBoolean
+local EvaluateColorValueFromBoolean = C_CurveUtil.EvaluateColorValueFromBoolean
+
+local function EvaluateColorValuesFromBoolean(boolean, valueIfTrue, valueIfFalse)
+	local r = EvaluateColorValueFromBoolean(boolean, valueIfTrue.r, valueIfFalse.r)
+	local g = EvaluateColorValueFromBoolean(boolean, valueIfTrue.g, valueIfFalse.g)
+	local b = EvaluateColorValueFromBoolean(boolean, valueIfTrue.b, valueIfFalse.b)
+	local a = EvaluateColorValueFromBoolean(boolean, valueIfTrue.a or 1, valueIfFalse.a or 1)
+	return r, g, b, a
+end
 
 PitBull4_CastBar:SetModuleType("secret_bar")
 PitBull4_CastBar:SetName(L["Cast bar"])
@@ -182,11 +190,9 @@ function PitBull4_CastBar:GetColor(frame, value)
 	end
 
 	if data.casting then
-		local color = EvaluateColorFromBoolean(data.uninterruptible, casting_uninterruptible_color, casting_interruptible_color)
-		return color:GetRGBA()
+		return EvaluateColorValuesFromBoolean(data.uninterruptible, casting_uninterruptible_color, casting_interruptible_color)
 	elseif data.channeling then
-		local color = EvaluateColorFromBoolean(data.uninterruptible, channel_uninterruptible_color, channel_interruptible_color)
-		return color:GetRGBA()
+		return EvaluateColorValuesFromBoolean(data.uninterruptible, channel_uninterruptible_color, channel_interruptible_color)
 	elseif data.stop_time then
 		local alpha = data.stop_time - GetTime() + 1
 		if alpha >= 1 then
@@ -204,8 +210,7 @@ function PitBull4_CastBar:GetColor(frame, value)
 					r, g, b = unpack(self.db.profile.global.casting_complete_color)
 				end
 			else -- Last cast channeled
-				local color = EvaluateColorFromBoolean(data.uninterruptible, channel_uninterruptible_color, channel_interruptible_color)
-				r, g, b = color:GetRGB()
+				r, g, b = EvaluateColorValuesFromBoolean(data.uninterruptible, channel_uninterruptible_color, channel_interruptible_color)
 			end
 			return r, g, b, alpha
 		end
