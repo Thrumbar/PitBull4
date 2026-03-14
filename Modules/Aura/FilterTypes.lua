@@ -266,7 +266,7 @@ local function meta_filter_option(self, options)
 				end
 			end
 			meta_filter_funcs[self] = nil -- wipe the cached function
-			PitBull4_Aura:SetFilterOptions(self, options)
+			-- PitBull4_Aura:SetFilterOptions(self, options)
 			PitBull4_Aura:UpdateAll()
 		end,
 		values = function(info)
@@ -1123,7 +1123,7 @@ local function map_filter_options(self,options)
 		end,
 		set = function(info, value)
 			PitBull4_Aura:GetFilterDB(self).map_type = value
-			PitBull4_Aura:SetFilterOptions(self, options)
+			-- PitBull4_Aura:SetFilterOptions(self, options)
 			PitBull4_Aura:UpdateAll()
 		end,
 		values = {

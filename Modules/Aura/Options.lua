@@ -1970,16 +1970,16 @@ PitBull4_Aura:SetGlobalOptionsFunction(function(self)
 		hidden = function(info)
 			return not self:IsEnabled() or not MSQ
 		end,
-	},
-	'div', {
-		type = "header",
-		name = L["Filter Editor"],
-		hidden = function(info)
-			-- don't show the divider if there are no other shown options
-			return not self:IsEnabled() or not MSQ
-		end,
-	},
-	PitBull4_Aura:GetFilterEditor()
+	}
+	-- 'div', {
+	-- 	type = "header",
+	-- 	name = L["Filter Editor"],
+	-- 	hidden = function(info)
+	-- 		-- don't show the divider if there are no other shown options
+	-- 		return not self:IsEnabled() or not MSQ
+	-- 	end,
+	-- },
+	-- PitBull4_Aura:GetFilterEditor()
 end)
 
 local HIGHLIGHT_FILTER_OPTIONS = {}
