@@ -807,20 +807,32 @@ function PitBull4_LuaTexts:OnDisable()
 	timerframe:Hide()
 end
 
+local error_text do
+	local text_errors = {}
+	function error_text(message, func)
+		-- ideally we'd just show it once per guid, but alas.
+		if func then
+			-- hack to fix the '?' as the name of the function pcalled
+			message = message:gsub("'%?'",("'%s'"):format(func))
+		end
+		if not text_errors[message] then
+			text_errors[message] = true
+			geterrorhandler()(message)
+		end
+	end
+end
+
 local function set_text(font_string, ...)
-	local success = select(1,...) -- first arg is true if user code was successful
+	local success, err = ... -- varargs are a pcall result
 	if not success then
-		pcall(geterrorhandler(),select(2,...))
+		geterrorhandler()(err)
+		-- text_error(("PitBull4_LuaTexts:%s:%s caused an error:\n%s"):format(font_string.frame.layout, font_string.luatexts_name, err))
+		-- print("!!", font_string.frame.layout .. ":" .. font_string.luatexts_name)
 		font_string:SetText("{err}")
-		-- print("!!", font_string.frame.layout, font_string.luatexts_name)
-	elseif select('#',...) > 1 and select(2,...) ~= nil then
-		local success, err = pcall(font_string.SetFormattedText,font_string,select(2,...))
+	elseif err ~= nil then
+		success, err = pcall(font_string.SetFormattedText, font_string, select(2,...))
 		if not success then
-			-- hack to add the name of the text that caused the error to the error message and
-			-- to fix the ? for the name of the function we're calling.  xpcall would handle
-			-- the latter for us but it requires a lot of overhead that's just not worth it.
-			local output = "PitBull4_LuaTexts:"..font_string.frame.layout..":"..font_string.luatexts_name.." caused the following error:\n"..err:gsub("'%?'","'SetFormattedText'")
-			pcall(geterrorhandler(),output)
+			error_text(("PitBull4_LuaTexts:%s:%s caused an error:\n%s"):format(font_string.frame.layout, font_string.luatexts_name, err), "SetFormattedText")
 			font_string:SetText("{err}")
 		end
 	else
@@ -833,8 +845,7 @@ local function set_font(font_string)
 	local font, size = font_string:GetFont()
 	local success, err = pcall(font_string.SetFont, font_string, font, size, PitBull4_LuaTexts.outline)
 	if not success then
-		local output = "PitBull4_LuaTexts:"..font_string.frame.layout..":"..font_string.luatexts_name.." caused the following error when calling SetFont("..tostring(font)..","..tostring(size)..","..tostring(PitBull4_LuaTexts.outline).."):\n"..err:gsub("'%?'","'SetFont)'")
-		pcall(geterrorhandler(),output)
+		error_text(("PitBull4_LuaTexts:%s:%s caused an error when calling SetFont(%s,%s,%s):\n%s"):format(font_string.frame.layout, font_string.luatexts_name, tostring(font), tostring(size), tostring(PitBull4_LuaTexts.outline), err), "SetFont")
 	end
 end
 
@@ -842,14 +853,12 @@ local function set_alpha(font_string)
 	if PitBull4_LuaTexts.secret_alpha ~= nil then
 		local success, err = pcall(font_string.SetAlphaFromBoolean, font_string, PitBull4_LuaTexts.secret_alpha, PitBull4_LuaTexts.secret_alpha_if_true, PitBull4_LuaTexts.secret_alpha_if_false)
 		if not success then
-			local output = "PitBull4_LuaTexts:"..font_string.frame.layout..":"..font_string.luatexts_name.." caused the following error when calling SetAlphaFromBoolean():\n"..err:gsub("'%?'","'SetAlphaFromBoolean)'")
-			pcall(geterrorhandler(),output)
+			error_text(("PitBull4_LuaTexts:%s:%s caused the following error when calling SetAlphaFromBoolean():\n%s"):format(font_string.frame.layout, font_string.luatexts_name, err), "SetAlphaFromBoolean")
 		end
 	else
 		local success, err = pcall(font_string.SetAlpha, font_string, PitBull4_LuaTexts.alpha)
 		if not success then
-			local output = "PitBull4_LuaTexts:"..font_string.frame.layout..":"..font_string.luatexts_name.." caused the following error when calling SetAlpha("..tostring(PitBull4_LuaTexts.alpha).."):\n"..err:gsub("'%?'","'SetAlpha)'")
-			pcall(geterrorhandler(),output)
+			error_text(("PitBull4_LuaTexts:%s:%s caused the following error when calling SetAlpha(%s):\n%s"):format(font_string.frame.layout, font_string.luatexts_name, tostring(PitBull4_LuaTexts.alpha), err), "SetAlpha")
 		end
 	end
 end
