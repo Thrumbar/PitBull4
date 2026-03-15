@@ -5,9 +5,8 @@ local L = PitBull4.L
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
 local ShouldUnitAuraInstanceBeSecret = C_Secrets.ShouldUnitAuraInstanceBeSecret
+local IsSpellKnownOrInSpellBook = C_SpellBook.IsSpellKnownOrInSpellBook
 
-local player_class = UnitClassBase("player")
-local _, player_race = UnitRace("player")
 
 --- Return the DB dictionary for the specified filter.
 -- Filter Types should use this to get their db.
@@ -18,79 +17,87 @@ function PitBull4_Aura:GetFilterDB(filter)
 	return self.db.profile.global.filters[filter]
 end
 
--- Setup the data for who can dispel what types of auras.
--- dispel in this context means remove from friendly players
-local can_dispel = {
+-- Set what types of auras you can dispel (remove from friends).
+local dispel_spells = {
+	Magic = {
+		[527] = 0, -- Purify (Priest)
+		[77130] = 0, -- Purify Spirit (Shaman)
+		[115450] = 0, -- Detox (Monk)
+		[4987] = 0, -- Cleanse (Paladin)
+		[88423] = 0, -- Nature's Cure (Druid)
+		[360823] = 0, -- Naturalize (Evoker)
+		[89808] = 1, -- Singe Magic (Warlock Pet)
+	},
+	Disease = {
+		[390632] = 0, -- Improved Purify (Priest)
+		[213634] = 0, -- Purify Disease (Priest)
+		[388874] = 0, -- Improved Detox (Monk)
+		[218164] = 0, -- Detox (Monk)
+		[393024] = 0, -- Improved Cleanse (Paladin)
+		[213644] = 0, -- Cleanse Toxins (Paladin)
+	},
+	Poison = {
+		[392378] = 0, -- Improved Nature's Cure (Druid)
+		[2782] = 0, -- Remove Corruption (Druid)
+		[388874] = 0, -- Improved Detox (Monk)
+		[218164] = 0, -- Detox (Monk)
+		[393024] = 0, -- Improved Cleanse (Paladin)
+		[213644] = 0, -- Cleanse Toxins (Paladin)
+		[360823] = 0, -- Naturalize (Evoker)
+		[365585] = 0, -- Expunge (Evoker)
+	},
+	Curse = {
+		[392378] = 0, -- Improved Nature's Cure (Druid)
+		[2782] = 0, -- Remove Corruption (Druid)
+		[383016] = 0, -- Improved Purify Spirit (Shaman)
+		[51886] = 0, -- Cleanse Spirit (Shaman)
+		[475] = 0, -- Remove Curse (Mage)
+	}
 }
+local can_dispel = {}
 PitBull4_Aura.can_dispel = can_dispel
 
--- Setup the data for who can purge what types of auras.
--- purge in this context means remove from enemies.
-local can_purge = {
+-- Set what types of auras you can purge (remove from enemies).
+local purge_spells = {
+	Magic = {
+		[32375] = 0, -- Mass Dispel (Priest)
+		[528] = 0, -- Dispel Magic (Priest)
+		[370] = 0, -- Purge (Shaman)
+		[378773] = 0, -- Greater Purge (Shaman)
+		[30449] = 0, -- Spellsteal (Mage)
+		[278326] = 0, -- Consume Magic (Demon Hunter)
+		[19505] = 1, -- Devour Magic (Warlock Pet)
+		[19801] = 0, -- Tranquilizing Shot (Hunter)
+		[154742] = 0, -- Arcane Acuity (Arcane Torrent proxy for Blood Elf)
+	},
+	Enrage = {
+		[2908] = 0, -- Soothe (Druid)
+		[19801] = 0, -- Tranquilizing Shot (Hunter)
+		[5938] = 0, -- Shiv (Rogue)
+		[450432] = 0, -- Pressure Points (Monk)
+	},
 }
+local can_purge = {}
 PitBull4_Aura.can_purge = can_purge
 
 -- Rescan spells that can change what we can dispel and purge.
 function PitBull4_Aura:PLAYER_TALENT_UPDATE()
-	if player_class == "DEMONHUNTER" then
-		can_purge.Magic = IsPlayerSpell(278326) -- Consume Magic
-
-	elseif player_class == "DRUID" then
-		can_dispel.Curse = IsPlayerSpell(2782) or IsPlayerSpell(392378) -- Remove Corruption / Improved Nature's Cure
-		can_dispel.Poison = can_dispel.Curse
-		can_dispel.Magic = IsPlayerSpell(88423) -- Nature's Cure
-
-		can_purge.Enrage = IsPlayerSpell(2908) -- Soothe
-
-	elseif player_class == "EVOKER" then
-		can_dispel.Poison = IsPlayerSpell(360823) or IsPlayerSpell(365585) or IsPlayerSpell(374251) -- Naturalize / Expunge / Cauterizing Flame
-		can_dispel.Curse = IsPlayerSpell(374251) -- Cauterizing Flame
-		can_dispel.Disease = IsPlayerSpell(374251) -- Cauterizing Flame
-		can_dispel.Magic = IsPlayerSpell(360823) -- Naturalize
-
-		can_purge.Magic = IsPlayerSpell(372048) -- Oppressing Roar
-
-	elseif player_class == "HUNTER" then
-		can_purge.Enrage = IsPlayerSpell(19801) -- Tranquilizing Shot
-		can_purge.Magic = can_purge.Enrage
-
-	elseif player_class == "MAGE" then
-		can_dispel.Curse = IsPlayerSpell(475) -- Remove Curse
-
-		can_purge.Magic = IsPlayerSpell(30449) -- Spellsteal
-
-	elseif player_class == "MONK" then
-		can_dispel.Poison = IsPlayerSpell(218164) or IsPlayerSpell(388874) -- Detox / Improved Detox
-		can_dispel.Disease = can_dispel.Poison
-		can_dispel.Magic = IsPlayerSpell(115450) -- Detox (Mistweaver)
-
-	elseif player_class == "PALADIN" then
-		can_dispel.Poison = IsPlayerSpell(213644) or IsPlayerSpell(393024) -- Cleanse Toxins / Improved Cleanse
-		can_dispel.Disease = can_dispel.Poison
-		can_dispel.Magic = IsPlayerSpell(4987) -- Cleanse
-
-	elseif player_class == "PRIEST" then
-		can_dispel.Disease = IsPlayerSpell(213634) or IsPlayerSpell(390632) -- Purify Disease / Improved Purify
-		can_dispel.Magic = IsPlayerSpell(527) -- Purify
-
-		can_purge.Magic = IsPlayerSpell(528) or IsPlayerSpell(32375) -- Dispel Magic / Mass Dispel
-
-	elseif player_class == "SHAMAN" then
-		can_dispel.Curse = IsPlayerSpell(51886) or IsPlayerSpell(383016) -- Cleanse Spirit / Improved Purify Spirit
-		can_dispel.Poison = IsPlayerSpell(383013) -- Poison Cleansing Totem
-		can_dispel.Magic = IsPlayerSpell(77130) -- Purify Spirit
-
-		can_purge.Magic = IsPlayerSpell(370) or IsPlayerSpell(378773) -- Purge / Greater Purge
-
-	elseif player_class == "WARLOCK" then
-		can_dispel.Magic = IsSpellKnown(89808, true) -- Singe Magic (Imp)
-
-		can_purge.Magic = IsSpellKnown(19505, true) -- Devour Magic (Felhunter)
+	for spell_type, spells in next, purge_spells do
+		for spell_id, spell_bank in next, spells do
+			if IsSpellKnownOrInSpellBook(spell_id, spell_bank) then
+				can_purge[spell_type] = true
+				break
+			end
+		end
 	end
 
-	-- Blood Elf Arcane Torrent
-	if player_race == "BloodElf" then
-		can_purge.Magic = true
+	for spell_type, spells in next, dispel_spells do
+		for spell_id, spell_bank in next, spells do
+			if IsSpellKnownOrInSpellBook(spell_id, spell_bank) then
+				can_dispel[spell_type] = true
+				break
+			end
+		end
 	end
 end
 

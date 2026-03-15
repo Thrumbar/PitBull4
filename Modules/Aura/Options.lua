@@ -8,9 +8,6 @@ local LN = PitBull4.LOCALIZED_NAMES
 
 local MSQ = LibStub("Masque", true)
 
-local can_dispel = PitBull4_Aura.can_dispel
-local can_purge = PitBull4_Aura.can_purge
-
 local color_defaults = {
 	caster = {
 		my = {0, 1, 0, 1},

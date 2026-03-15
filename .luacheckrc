@@ -110,6 +110,7 @@ globals = {
 	"C_Secrets",
 	"C_SpecializationInfo",
 	"C_Spell",
+	"C_SpellBook",
 	"C_StringUtil",
 	"C_Timer",
 	"C_TooltipInfo",
