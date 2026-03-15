@@ -4,6 +4,8 @@ local L = PitBull4.L
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
 
+local filters = PitBull4_Aura.filters
+
 local IsAuraFilteredOutByInstanceID = C_UnitAuras.IsAuraFilteredOutByInstanceID
 local ShouldUnitComparisonBeSecret = C_Secrets.ShouldUnitComparisonBeSecret
 
@@ -212,7 +214,6 @@ local function meta_filter(self, entry, frame)
 	end
 
   -- Otherwise we're going to have to build it
-	local filters = PitBull4_Aura.db.profile.global.filters
 	local filter = filters[self]
 	local names = filter.filters
 	local ops = filter.operators
@@ -273,7 +274,6 @@ local function meta_filter_option(self, options)
 		end,
 		values = function(info)
 			local t = {}
-			local filters = PitBull4_Aura.db.profile.global.filters
 			t[""] = L["None"]
 			for k,v in pairs(filters) do
 				if k ~= self and not PitBull4_Aura:FilterReferences(k,self) then
@@ -1096,7 +1096,6 @@ for i, v in ipairs(races) do
 	race_names[i] = LN[v]
 end
 local function map_filter(self, entry, frame)
-	local filters = PitBull4_Aura.db.profile.global.filters
 	local db = filters[self]
 	local map = db.map
 	local map_type = db.map_type
@@ -1159,7 +1158,6 @@ local function map_filter_options(self,options)
 		end,
 		values = function(info)
 			local t = {}
-			local filters = PitBull4_Aura.db.profile.global.filters
 			for k,v in pairs(filters) do
 				if k ~= self and not PitBull4_Aura:FilterReferences(k,self) then
 					t[k] = v.display_name or k

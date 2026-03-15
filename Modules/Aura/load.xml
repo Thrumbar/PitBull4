@@ -3,9 +3,9 @@
 
 	<Script file="Aura.lua"/>
 	<Script file="Controls.lua"/>
-	<!-- <Script file="FilterEditor.lua"/> -->
-	<Script file="FilterTypes.lua"/>
 	<Script file="Filter.lua"/>
+	<Script file="FilterTypes.lua"/>
+	<!-- <Script file="FilterEditor.lua"/> -->
 	<Script file="Highlight.lua"/>
 	<Script file="UpdateCooldownTexts.lua"/>
 	<Script file="UpdateWeaponEnchants.lua"/>

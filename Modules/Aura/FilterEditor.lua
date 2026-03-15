@@ -1,9 +1,13 @@
+-- luacheck: ignore
 do return end
 
 local PitBull4 = _G.PitBull4
 local L = PitBull4.L
 
 local PitBull4_Aura = PitBull4:GetModule("Aura")
+
+local filters = PitBull4_Aura.filters
+local filter_types = PitBull4_Aura.filter_types
 
 -- The type of control to use for multiselect options in the Filter Editor.
 -- If you're having error 132's with the filter editor commenting out the line
@@ -24,8 +28,6 @@ local CURRENT_FILTER_OPTIONS = {}
 -- @usage PitBull4_Aura:SetFilterOptions("myfilter", CURRENT_FILTER_OPTIONS)
 -- @return nil
 function PitBull4_Aura:SetFilterOptions(filter, options)
-	local filter_types = PitBull4_Aura.filter_types
-
 	-- Get rid of any old options we had before
 	table.wipe(options)
 
@@ -123,7 +125,6 @@ end
 local player_class = UnitClassBase("player")
 local _, player_race = UnitRace("player")
 local function filter_from_map(map)
-	local filters = PitBull4_Aura.db.profile.global.filters
 	local map_filter = filters[map]
 	if not map_filter or map_filter.filter_type ~= 'Map' then return end
 	if map_filter.map_type == 'class' then
@@ -144,7 +145,6 @@ end
 
 local function get_values_from_filter(name,t)
 	if not name then return end
-	local filters = PitBull4_Aura.db.profile.global.filters
 	local filter = filters[name]
 	if not filter or filter.filter_type ~= 'Name' then return end
 	name = code(name)

@@ -7,15 +7,288 @@ local PitBull4_Aura = PitBull4:GetModule("Aura")
 local ShouldUnitAuraInstanceBeSecret = C_Secrets.ShouldUnitAuraInstanceBeSecret
 local IsSpellKnownOrInSpellBook = C_SpellBook.IsSpellKnownOrInSpellBook
 
+-- Filters are indexed by two character codes: [type][identifier].
+-- Types:
+-- ! Master filters
+-- # Intermediate filters
+-- % Filter maps
+-- & Aura field filters
+-- * Aura filter strings
+-- @ Simple filters
 
---- Return the DB dictionary for the specified filter.
--- Filter Types should use this to get their db.
--- @param filter the name of the filter
--- @usage local db = PitBull4_Aura:GetFilterDB("myfilter")
--- @return the DB dictionary for the specified filter or nil
-function PitBull4_Aura:GetFilterDB(filter)
-	return self.db.profile.global.filters[filter]
-end
+local filters = {
+	['@I'] = {
+		display_name = L["True"],
+		filter_type = 'True',
+		disabled = true,
+		built_in = true,
+	},
+	['@J'] = {
+		display_name = L["False"],
+		filter_type = 'False',
+		disabled = true,
+		built_in = true,
+	},
+	['@A'] = {
+		display_name = L["Buff"],
+		filter_type = 'Buff',
+		buff = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@B'] = {
+		display_name = L["Debuff"],
+		filter_type = 'Buff',
+		buff = false,
+		disabled = true,
+		built_in = true,
+	},
+	['@C'] = {
+		display_name = L["Weapon enchant"],
+		filter_type = 'Weapon Enchant',
+		weapon = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@D'] = {
+		display_name = L["Friend"],
+		filter_type = 'Unit',
+		unit_operator = 'friend',
+		disabled = true,
+		built_in = true,
+	},
+	['@E'] = {
+		display_name = L["Enemy"],
+		filter_type = 'Unit',
+		unit_operator = 'enemy',
+		disabled = true,
+		built_in = true,
+	},
+	['@F'] = {
+		display_name = L["Pet"],
+		filter_type = 'Unit',
+		unit_operator = '==',
+		unit = 'pet',
+		disabled = true,
+		built_in = true,
+	},
+	['@G'] = {
+		display_name = L["Player"],
+		filter_type = 'Unit',
+		unit_operator = '==',
+		unit = 'player',
+		disabled = true,
+		built_in = true,
+	},
+	['@H'] = {
+		display_name = L["Mine"],
+		filter_type = 'Mine',
+		mine = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@K'] = {
+		display_name = L["Dispellable"],
+		filter_type = 'Filter String',
+		filter_string = "RAID_PLAYER_DISPELLABLE",
+		disabled = true,
+		built_in = true,
+	},
+	['@L'] = {
+		display_name = L["Cast by my vehicle"],
+		filter_type = 'Caster',
+		unit_operator = '==',
+		unit = 'vehicle',
+		disabled = true,
+		built_in = true,
+	},
+	['@P'] = {
+		display_name = L["Purgeable"],
+		filter_type = 'Filter String',
+		filter_string = "RAID_PLAYER_DISPELLABLE",
+		disabled = true,
+		built_in = true,
+	},
+	['@Q'] = {
+		display_name = L["Boss"],
+		filter_type = 'Boss debuff',
+		boss_debuff = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@R'] = {
+		display_name = L["Personal nameplate"],
+		filter_type = 'Should consolidate',
+		should_consolidate = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@S'] = {
+		display_name = L["Global nameplate"],
+		filter_type = 'Global nameplate',
+		global_nameplate = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@T'] = {
+		display_name = L["Cast by a player"],
+		filter_type = 'Cast by a player',
+		caster_is_player = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@U'] = {
+		display_name = L["Can apply aura"],
+		filter_type = 'Can apply aura',
+		can_apply_aura = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@V'] = {
+		display_name = L["Self buff"],
+		filter_type = 'Self buff',
+		self_buff = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@W'] = {
+		display_name = L["Any player"],
+		filter_type = 'Unit',
+		unit_operator = 'player',
+		disabled = true,
+		built_in = true,
+	},
+	['@X'] = {
+		display_name = L["Other player pet"],
+		filter_type = 'Unit',
+		unit_operator = 'other_player_pet',
+		disabled = true,
+		built_in = true,
+	},
+	['@Y'] = {
+		display_name = L["Has custom visibility"],
+		filter_type = 'Has custom visibility',
+		custom_visibility = true,
+		disabled = true,
+		built_in = true,
+	},
+	['@Z'] = {
+		display_name = L["Custom show"],
+		filter_type = 'Should show',
+		should_show = true,
+		disabled = true,
+		built_in = true,
+	},
+	['!B'] = {
+		display_name = L["Default buffs"],
+		filter_type = 'Meta',
+		filters = {'@G','#A','@F','&B','@D','#B','@E','@L'},
+		operators = {'&','|','&','|','&','|','|'},
+		built_in = true,
+		display_when = "buff",
+	},
+	['!C'] = {
+		display_name = L["Default buffs, mine"],
+		filter_type = 'Meta',
+		filters = {'@H','!B','@E'},
+		operators = {'&','|'},
+		built_in = true,
+		display_when = "buff",
+	},
+	['!D'] = {
+		display_name = L["Default debuffs"],
+		filter_type = 'Meta',
+		filters = {'@G','#C','@D','#D','#E','@L'},
+		operators = {'&','|','&','|','|'},
+		built_in = true,
+		display_when = "debuff",
+	},
+	['!E'] = {
+		display_name = L["Default debuffs, mine"],
+		filter_type = 'Meta',
+		filters = {'@H','!D','&D'},
+		operators = {'&','|'},
+		built_in = true,
+		display_when = "debuff",
+	},
+	-- ['!F'] = {
+	-- 	display_name = L["Highlight: all friend debuffs"],
+	-- 	filter_type = 'Meta',
+	-- 	filters = {'@D','@B'},
+	-- 	operators = {'&'},
+	-- 	built_in = true,
+	-- },
+	-- ['!G'] = {
+	-- 	display_name = L["Highlight: dispellable debuffs"],
+	-- 	filter_type = 'Meta',
+	-- 	filters = {'!F','@K'},
+	-- 	operators = {'&'},
+	-- 	built_in = true,
+	-- 	display_when = "highlight",
+	-- },
+	-- ['!H'] = {
+	-- 	display_name = L["Highlight: dispellable by me debuffs"],
+	-- 	filter_type = 'Meta',
+	-- 	filters = {'!F','&D'},
+	-- 	operators = {'&'},
+	-- 	built_in = true,
+	-- 	display_when = "highlight",
+	-- },
+	-- ['!K'] = {
+	-- 	display_name = L["Highlight: purgeable buffs"],
+	-- 	filter_type = 'Meta',
+	-- 	filters = {'@E','@A','@P'},
+	-- 	operators = {'&','&','&'},
+	-- 	built_in = true,
+	-- 	display_when = "highlight",
+	-- },
+	-- ['!L'] = {
+	-- 	display_name = L["Highlight: purgeable by me buffs"],
+	-- 	filter_type = 'Meta',
+	-- 	filters = {'@E','@A','&P'},
+	-- 	operators = {'&','&','&'},
+	-- 	built_in = true,
+	-- 	display_when = "highlight",
+	-- },
+	['!M'] = {
+		-- NameplateBuffContainerMixin:ShouldShowBuff
+		display_name = L["Blizzard buffs, nameplate"],
+		filter_type = 'Meta',
+		filters = {'@S','@R','@H'},
+		operators = {'|','&'},
+		built_in = true,
+		display_when = "buff",
+	},
+	['!N'] = {
+		-- CompactUnitFrame_UtilShouldDisplayBuff
+		display_name = L["Blizzard buffs, group"],
+		filter_type = 'Meta',
+		filters = {'@Z','@Y','@H','@U','@V'},
+		operators = {'|~','&','&','&~'},
+		built_in = true,
+		display_when = "buff",
+	},
+	['!P'] = {
+		-- TargetFrame_ShouldShowDebuffs
+		display_name = L["Blizzard debuffs, target"],
+		filter_type = 'Meta',
+		filters = {'@S','@H','@G','@W','@D','@X','@T'},
+		operators = {'|','|','|','|','|','|~'},
+		built_in = true,
+		display_when = "debuff",
+	},
+	['!Q'] = {
+		-- CompactUnitFrame_Util_ShouldDisplayDebuff
+		-- Custom show |~ Custom visibility
+		display_name = L["Blizzard debuffs, group"],
+		filter_type = 'Meta',
+		filters = {'@Z','@Y'},
+		operators = {'|~'},
+		built_in = true,
+		display_when = "debuff",
+	},
+}
+PitBull4_Aura.filters = filters
 
 -- Set what types of auras you can dispel (remove from friends).
 local dispel_spells = {
@@ -101,11 +374,31 @@ function PitBull4_Aura:PLAYER_TALENT_UPDATE()
 	end
 end
 
+
+--- Return the DB dictionary for the specified filter.
+-- Filter Types should use this to get their db.
+-- @param name the name of the filter
+-- @usage local db = PitBull4_Aura:GetFilterDB("myfilter")
+-- @return the DB dictionary for the specified filter or nil
+function PitBull4_Aura:GetFilterDB(name)
+	return filters[name]
+end
+
+--- Run a filter on an aura entry and return if it passes.
+-- @param name the name of the filter
+-- @param entry the aura data table
+-- @param frame the frame the aura is attached to
+-- @param allow_secrets if the filter should run on an aura data table containing secrets
+-- @return the filter result
 function PitBull4_Aura:FilterEntry(name, entry, frame, allow_secrets)
-	if not name or name == "" then return true end
 	local filter = self:GetFilterDB(name)
-	if not filter then return true end
-	if not allow_secrets and ShouldUnitAuraInstanceBeSecret(frame.unit, entry.id) then return true end
+	if not filter then
+		-- geterrorhandler()(("PitBull4_Aura:FilterEntry: Invalid filter name: %q"):format(name))
+		return true
+	end
+	if not allow_secrets and ShouldUnitAuraInstanceBeSecret(frame.unit, entry.id) then
+		return true
+	end
 	local filter_func = self.filter_types[filter.filter_type].filter_func
 	return filter_func(name, entry, frame)
 end
