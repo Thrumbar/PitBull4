@@ -115,7 +115,7 @@ local function any_layout_uses_filter(filter)
 	local layouts = PitBull4.db.profile.layouts
 	for layout in pairs(layouts) do
 		local db = PitBull4_Aura:GetLayoutDB(layout).layout
-		if db.buff.filter == filter or db.debuff.filter == filter then
+		if db.buff.filter_new == filter or db.debuff.filter_new == filter then
 			return true
 		end
 	end

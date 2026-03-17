@@ -53,7 +53,7 @@ local function get_aura_list(list, unit, db, is_buff, frame)
 	local max_auras = is_buff and db.max_buffs or db.max_debuffs
 	local sort_rule = Enum.UnitAuraSortRule[(is_buff and db.layout.buff.sort_rule or db.layout.debuff.sort_rule) or "Unsorted"]
 	local sort_direction = (is_buff and db.layout.buff.reverse or db.layout.debuff.reverse) and 1 or 0 -- Enum.UnitAuraSortDirection
-	local filter_name = is_buff and db.layout.buff.filter or db.layout.debuff.filter
+	local filter_name = is_buff and db.layout.buff.filter_new or db.layout.debuff.filter_new
 
 	-- Loop through the auras
 	local index = 1
@@ -354,7 +354,7 @@ local function update_auras(frame, db, is_buff)
 	-- If weapons are enabled and the unit is the player
 	-- copy the weapon entries into the aura list
 	if is_buff and db.enabled_weapons and is_player then
-		local filter = db.layout.buff.filter
+		local filter = db.layout.buff.filter_new
 		copy_weapon_entry(weapon_list, list, INVSLOT_MAINHAND)
 		if list[#list] and not PitBull4_Aura:FilterEntry(filter, list[#list], frame) then
 			list[#list] = nil

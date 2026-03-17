@@ -52,7 +52,7 @@ end
 -- Takes a single aura entry and runs the Highlight Filter on it.
 -- Storing the results in the results table for use by SetHighlight() later
 function PitBull4_Aura:HighlightFilter(db, entry, frame)
-	local highlight_filters = db.highlight_filters
+	local highlight_filters = db.highlight_filters_new
 
 	-- Iterate the highlight filters
 	for id = 1, #highlight_filters do
@@ -63,14 +63,14 @@ function PitBull4_Aura:HighlightFilter(db, entry, frame)
 			result.priority = id
 
 			-- Determine the color for the match
-			if db.highlight_filters_color_by_type[id] then
+			if db.highlight_filters_color_by_type_new[id] then
 				local color = entry.id and GetAuraDispelTypeColor(frame.unit, entry.id, self.dispel_color_curve)
 				if color == nil then
 					color = self.dispel_color_curve:Evaluate(0)
 				end
 				result.color = {color:GetRGB()}
 			else
-				result.color = db.highlight_filters_custom_color[id]
+				result.color = db.highlight_filters_custom_color_new[id]
 			end
 
 			-- Add the entry

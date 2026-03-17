@@ -97,14 +97,14 @@ PitBull4_Aura:SetDefaults({
 			color_type = 'weapon',
 		},
 	},
-	highlight = false,
-	highlight_filters = {
+	highlight = true,
+	highlight_filters_new = {
 		-- '!H','!L',
 	},
-	highlight_filters_color_by_type = {
+	highlight_filters_color_by_type_new = {
 		-- true, true,
 	},
-	highlight_filters_custom_color = {
+	highlight_filters_custom_color_new = {
 		-- { 1, 1, 1, 1},
 		-- { 1, 1, 1, 1},
 	},
@@ -128,7 +128,7 @@ PitBull4_Aura:SetDefaults({
 			row_spacing = 0,
 			col_spacing = 0,
 			new_row_size = false,
-			filter = "",
+			filter_new = "",
 			frame_level = 9,
 		},
 		debuff = {
@@ -149,7 +149,7 @@ PitBull4_Aura:SetDefaults({
 			col_spacing = 0,
 			row_spacing = 0,
 			new_row_size = false,
-			filter = "",
+			filter_new = "",
 			frame_level = 9,
 		},
 	},
@@ -515,23 +515,23 @@ function PitBull4_Aura.SetHighlightOptions(self, options)
 		desc = L["Select a filter to use for highlighting auras."],
 		get = function(info)
 			local pos = tonumber(string.match(info[#info],"_(%d+)"))
-			return PitBull4.Options.GetLayoutDB(self).highlight_filters[pos] or ""
+			return PitBull4.Options.GetLayoutDB(self).highlight_filters_new[pos] or ""
 		end,
 		set = function(info, value)
 			local db = PitBull4.Options.GetLayoutDB(self)
-			local filters = db.highlight_filters
+			local filters = db.highlight_filters_new
 			local pos = tonumber(string.match(info[#info],"_(%d+)"))
 			if value == "" then
 				table.remove(filters,pos)
-				table.remove(db.highlight_filters_color_by_type,pos)
-				table.remove(db.highlight_filters_custom_color,pos)
+				table.remove(db.highlight_filters_color_by_type_new,pos)
+				table.remove(db.highlight_filters_custom_color_new,pos)
 			else
 				filters[pos] = value
-				if db.highlight_filters_color_by_type[pos] == nil then
-					db.highlight_filters_color_by_type[pos] = true
+				if db.highlight_filters_color_by_type_new[pos] == nil then
+					db.highlight_filters_color_by_type_new[pos] = true
 				end
-				if not db.highlight_filters_custom_color[pos] then
-					db.highlight_filters_custom_color[pos] = {1, 1, 1, 1}
+				if not db.highlight_filters_custom_color_new[pos] then
+					db.highlight_filters_custom_color_new[pos] = {1, 1, 1, 1}
 				end
 			end
 			PitBull4_Aura.SetHighlightOptions(self, options)
@@ -541,12 +541,12 @@ function PitBull4_Aura.SetHighlightOptions(self, options)
 			local t = {}
 			local filters = PitBull4_Aura.filters
 			t[""] = L["None"]
-			for k,v in pairs(filters) do
-				local display_when = v.display_when
-				if display_when == "both" or display_when == "highlight" then
-					t[k] = v.display_name or k
-				end
-			end
+			-- for k,v in pairs(filters) do
+			-- 	local display_when = v.display_when
+			-- 	if display_when == "both" or display_when == "highlight" then
+			-- 		t[k] = v.display_name or k
+			-- 	end
+			-- end
 			return t
 		end,
 		disabled = function(info)
@@ -566,7 +566,7 @@ function PitBull4_Aura.SetHighlightOptions(self, options)
 		desc = L["Use the auras type to select the color of the highlight."],
 		get = function(info)
 			local pos = tonumber(string.match(info[#info],"_(%d+)"))
-			local color_by_type = PitBull4.Options.GetLayoutDB(self).highlight_filters_color_by_type[pos]
+			local color_by_type = PitBull4.Options.GetLayoutDB(self).highlight_filters_color_by_type_new[pos]
 			if color_by_type == nil then
 				color_by_type = true
 			end
@@ -575,13 +575,13 @@ function PitBull4_Aura.SetHighlightOptions(self, options)
 		set = function(info, value)
 			local pos = tonumber(string.match(info[#info],"_(%d+)"))
 			local db = PitBull4.Options.GetLayoutDB(self)
-			db.highlight_filters_color_by_type[pos] = value
+			db.highlight_filters_color_by_type_new[pos] = value
 			PitBull4_Aura:UpdateAll()
 		end,
 		disabled = function(info)
 			local pos = tonumber(string.match(info[#info],"_(%d+)"))
 			local db = PitBull4.Options.GetLayoutDB(self)
-			local highlight_filters = db.highlight_filters
+			local highlight_filters = db.highlight_filters_new
 			return not db.highlight or not highlight_filters[pos] or highlight_filters[pos] == ""
 		end,
 	}
@@ -591,7 +591,7 @@ function PitBull4_Aura.SetHighlightOptions(self, options)
 		desc = L["Set the custom color for the highlight if not coloring by type."],
 		get = function(info)
 			local pos = tonumber(string.match(info[#info],"_(%d+)"))
-			local color = PitBull4.Options.GetLayoutDB(self).highlight_filters_custom_color[pos]
+			local color = PitBull4.Options.GetLayoutDB(self).highlight_filters_custom_color_new[pos]
 			if not color then
 				color = { 1, 1, 1, 1}
 			end
@@ -600,14 +600,14 @@ function PitBull4_Aura.SetHighlightOptions(self, options)
 		set = function(info, r, g, b, a)
 			local pos = tonumber(string.match(info[#info],"_(%d+)"))
 			local db = PitBull4.Options.GetLayoutDB(self)
-			db.highlight_filters_custom_color[pos] = {r, g, b, a}
+			db.highlight_filters_custom_color_new[pos] = {r, g, b, a}
 			PitBull4_Aura:UpdateAll()
 		end,
 		disabled = function(info)
 			local pos = tonumber(string.match(info[#info],"_(%d+)"))
 			local db = PitBull4.Options.GetLayoutDB(self)
-			local highlight_filters = db.highlight_filters
-			return not db.highlight or db.highlight_filters_color_by_type[pos] or not highlight_filters[pos] or highlight_filters[pos] == ""
+			local highlight_filters = db.highlight_filters_new
+			return not db.highlight or db.highlight_filters_color_by_type_new[pos] or not highlight_filters[pos] or highlight_filters[pos] == ""
 		end,
 	}
 	local header = {
@@ -621,13 +621,13 @@ function PitBull4_Aura.SetHighlightOptions(self, options)
 
 	local order = 1
 	local db = PitBull4.Options.GetLayoutDB(self)
-	local filters = db.highlight_filters
+	local filters = db.highlight_filters_new
 	if not filters then
 		filters = {}
-		db.highlight_filters = filters
+		db.highlight_filters_new = filters
 	end
-	db.highlight_filters_color_by_type = db.highlight_filters_color_by_type or {}
-	db.highlight_filters_custom_color = db.highlight_filters_custom_color or {}
+	db.highlight_filters_color_by_type_new = db.highlight_filters_color_by_type_new or {}
+	db.highlight_filters_custom_color_new = db.highlight_filters_custom_color_new or {}
 
 	options.enable = {
 		type = 'toggle',
@@ -742,24 +742,24 @@ PitBull4_Aura:SetLayoutOptionsFunction(function(self)
 	end
 	local function get_layout_filter(info)
 		local id = info[#info]
-		return PitBull4.Options.GetLayoutDB(self).layout[id].filter
+		return PitBull4.Options.GetLayoutDB(self).layout[id].filter_new
 	end
 	local function set_layout_filter(info, value)
 		local id = info[#info]
-		PitBull4.Options.GetLayoutDB(self).layout[id].filter = value
+		PitBull4.Options.GetLayoutDB(self).layout[id].filter_new = value
 		PitBull4.Options.UpdateFrames()
 	end
 	local function get_layout_filter_values(info)
 		local t = {}
 		local filters = PitBull4_Aura.filters
 		t[""] = L["None"]
-		for k,v in pairs(filters) do
-			local display_when = v.display_when
-			local group = info[#info]
-			if display_when == "both" or display_when == group then
-				t[k] = v.display_name or k
-			end
-		end
+		-- for k,v in pairs(filters) do
+		-- 	local display_when = v.display_when
+		-- 	local group = info[#info]
+		-- 	if display_when == "both" or display_when == group then
+		-- 		t[k] = v.display_name or k
+		-- 	end
+		-- end
 		return t
 	end
 	local function get_layout_anchor(info)
