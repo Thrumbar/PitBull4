@@ -170,9 +170,7 @@ local function call_opacity_function(self, frame)
 	local opacity_max = layout_db.opacity_max
 
 	local value, priority
-	-- Extra frame.unit test here is a workaround for the same root issue
-	-- as we have in BarModules.  See ticket 475.
-	if frame.guid and frame.unit then
+	if frame.unit and UnitExists(frame.unit) then
 		value, priority = self:GetOpacity(frame)
 	end
 	if not value or value >= opacity_max or value ~= value then

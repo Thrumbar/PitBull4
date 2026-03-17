@@ -159,6 +159,7 @@ globals = {
 	"GetWeaponEnchantInfo",
 	"GetXPExhaustion",
 	"InCombatLockdown",
+	"IsInInstance",
 	"IsInGroup",
 	"IsInRaid",
 	"IsPlayerInWorld",

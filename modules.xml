@@ -14,7 +14,7 @@
 <Include file="Modules\CastBar\load.xml"/>
 <!-- <Include file="Modules\CastBarLatency\load.xml"/> -->
 <Include file="Modules\Chi\load.xml"/>
-<!-- <Include file="Modules\CombatFader\load.xml"/> -->
+<Include file="Modules\CombatFader\load.xml"/>
 <Include file="Modules\CombatIcon\load.xml"/>
 <Include file="Modules\CombatText\load.xml"/>
 <Include file="Modules\ComboPoints\load.xml"/>
@@ -27,10 +27,10 @@
 <Include file="Modules\HideBlizzard\load.xml"/>
 <!-- <Include file="Modules\Highlight\load.xml"/> -->
 <Include file="Modules\HolyPower\load.xml"/>
-<!-- <Include file="Modules\HostilityFader\load.xml"/> -->
+<Include file="Modules\HostilityFader\load.xml"/>
 <Include file="Modules\LeaderIcon\load.xml"/>
 <Include file="Modules\LuaTexts\load.xml"/>
-<!-- <Include file="Modules\PhaseFader\load.xml"/> -->
+<Include file="Modules\PhaseFader\load.xml"/>
 <Include file="Modules\PhaseIcon\load.xml"/>
 <Include file="Modules\Portrait\load.xml"/>
 <Include file="Modules\PowerBar\load.xml"/>
