@@ -919,7 +919,7 @@ local function get_group_roster_info(super_unit_group, index)
 			_, class_name = UnitClass(unit)
 			-- The UnitInParty and UnitInRaid checks are an ugly workaround for thee
 			-- You are not in a party bug that Blizzard created.
-			if not PitBull4.leaving_world and (UnitInParty(unit) or UnitInRaid(unit)) then
+			if not PitBull4.leaving_world and (UnitInAnyGroup(unit)) then
 				if GetPartyAssignment("MAINTANK", unit) then
 					role = "MAINTANK"
 				elseif GetPartyAssignment("MAINASSIST", unit) then

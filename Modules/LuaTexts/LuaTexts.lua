@@ -874,7 +874,7 @@ local function update_text(font_string, event)
 	local func = func_cache[code]
 	local ScriptEnv = PitBull4_LuaTexts.ScriptEnv
 
-	if (frame.force_show and not frame.guid and name ~= L["Name"] and name ~= lua_name) or not unit then
+	if not unit or (frame.force_show and not UnitExists(unit) and name ~= L["Name"] and name ~= lua_name) then
 		font_string:SetFormattedText("{%s}", font_string.luatexts_name)
 		return
 	end

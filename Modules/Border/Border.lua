@@ -24,16 +24,15 @@ PitBull4_Border:SetDefaults({
 	hostility_color_npcs = false,
 })
 
-local EXEMPT_UNITS = {}
-for i = 1, 5 do
-	EXEMPT_UNITS[("target"):rep(i)] = true
-end
+local EXEMPT_UNITS = {
+	"targettarget",
+	"targettargettarget",
+}
 
 local HOSTILE_REACTION = 2
 local NEUTRAL_REACTION = 4
 local FRIENDLY_REACTION = 5
 
-local target_guid = nil
 local mouse_focus = nil
 
 local LibSharedMedia = LibStub("LibSharedMedia-3.0", true)
@@ -259,7 +258,7 @@ function PitBull4_Border:ShouldShow(frame)
 		return true
 	end
 
-	if not target_guid or frame.guid ~= target_guid or EXEMPT_UNITS[frame.unit] then
+	if not UnitExists("target") or not UnitIsUnit(frame.unit, "target") or EXEMPT_UNITS[frame.unit] then
 		return false
 	end
 
@@ -272,7 +271,6 @@ end
 
 function PitBull4_Border:PLAYER_TARGET_CHANGED()
 	mouse_focus = GetMouseFocus()
-	target_guid = UnitGUID("target")
 
 	for frame in PitBull4:IterateFrames() do
 		if frame.Border then

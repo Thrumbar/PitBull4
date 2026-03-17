@@ -90,7 +90,7 @@ function PitBull4_PvPIcon:GetExampleTexture(frame)
 		player_faction = "FFA"
 	end
 
-	if FRIENDLY_CLASSIFICATIONS[classification] or (frame.guid and frame.unit and UnitIsFriend("player", frame.unit)) then
+	if FRIENDLY_CLASSIFICATIONS[classification] or (frame.unit and UnitExists(frame.unit) and UnitIsFriend("player", frame.unit)) then
 		return [[Interface\TargetingFrame\UI-PVP-]] .. player_faction
 	end
 	return [[Interface\TargetingFrame\UI-PVP-]] .. OPPOSITE_PLAYER_FACTION[player_faction]

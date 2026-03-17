@@ -60,7 +60,7 @@ function PitBull4_Portrait:ClearFrame(frame)
 
 	portrait.style = nil
 	portrait.height = nil
-	portrait.guid = nil
+	portrait.unit = nil
 	portrait.full_body = nil
 	frame.Portrait = portrait:Delete()
 
@@ -132,7 +132,7 @@ function PitBull4_Portrait:UpdateFrame(frame)
 
 	local full_body = layout_db.full_body
 	portrait.full_body = full_body
-	portrait.guid = frame.guid
+	portrait.unit = frame.unit
 	if style == "three_dimensional" then
 		portrait.model:ClearModel()
 		if not falling_back then

@@ -23,12 +23,11 @@ PitBull4_Highlight:SetDefaults({
 	texture = "Blizzard QuestTitleHighlight",
 })
 
-local EXEMPT_UNITS = {}
-for i = 1, 5 do
-	EXEMPT_UNITS[("target"):rep(i)] = true
-end
+local EXEMPT_UNITS = {
+	"targettarget",
+	"targettargettarget",
+}
 
-local target_guid = nil
 local mouse_focus = nil
 
 function PitBull4_Highlight:OnEnable()
@@ -106,7 +105,7 @@ function PitBull4_Highlight:ShouldShow(frame)
 		return true
 	end
 
-	if not target_guid or frame.guid ~= target_guid or EXEMPT_UNITS[frame.unit] then
+	if not UnitExists("target") or not UnitIsUnit(frame.unit, "target") or EXEMPT_UNITS[frame.unit] then
 		return false
 	end
 
@@ -118,8 +117,6 @@ function PitBull4_Highlight:ShouldShow(frame)
 end
 
 function PitBull4_Highlight:PLAYER_TARGET_CHANGED()
-	target_guid = UnitGUID("target")
-
 	self:UpdateAll()
 end
 

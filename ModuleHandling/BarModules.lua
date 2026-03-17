@@ -29,11 +29,7 @@ local function call_value_function(self, frame, bar_db)
 		return nil, nil
 	end
 	local value, extra, icon
-	-- The extra frame.unit test here is a workaround for ticket 475.  It's not the
-	-- real fix.  The unit should never end up unset when the guid is set.  However,
-	-- this will stop users from seeing this failure in our state management while
-	-- not causing any real problems.
-	if frame.guid and frame.unit then
+	if frame.unit and UnitExists(frame.unit) then
 		value, extra, icon = self:GetValue(frame, bar_db)
 	end
 
@@ -89,9 +85,7 @@ local function call_color_function(self, frame, bar_db, value, extra, icon)
 		end
 	end
 	local r, g, b, a, override, atlas
-	-- See the comments in call_value_function for why the frame.unit test is here.
-	-- aka ticket 475.
-	if frame.guid and frame.unit then
+	if frame.unit and UnitExists(frame.unit) then
 		if bar_provider then
 			r, g, b, a, override, atlas = self:GetColor(frame, bar_db, value, extra, icon)
 		else
@@ -213,7 +207,7 @@ local function call_background_color_function(self, frame, bar_db, value, extra,
 		end
 	end
 	local r, g, b, a, override
-	if frame.guid then
+	if frame.unit and UnitExists(frame.unit) then
 		if bar_provider then
 			r, g, b, a, override = self:GetBackgroundColor(frame, bar_db, value, extra, icon)
 		else
@@ -291,7 +285,7 @@ local function call_extra_color_function(self, frame, bar_db, value, extra, icon
 	end
 
 	local r, g, b, a, override
-	if frame.guid then
+	if frame.unit and UnitExists(frame.unit) then
 		if bar_provider then
 			r, g, b, a, override = self:GetExtraColor(frame, value, extra)
 		else

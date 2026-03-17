@@ -104,7 +104,7 @@ function PitBull4_CombatText:UNIT_COMBAT(_, unit, event, flags, amount, type)
 						size_modifier = BLOCK_SIZE_MODIFIER
 					end
 
-					if UnitInParty(unit) or UnitInRaid(unit) then
+					if UnitInAnyGroup(unit) then
 						r, g, b = 1, 0, 0
 					elseif type > 0 then
 						r, g, b = 1, 1, 0

@@ -208,6 +208,7 @@ globals = {
 	"UnitHealthMissing",
 	"UnitHealthPercent",
 	"UnitHonorLevel",
+	"UnitInAnyGroup",
 	"UnitInParty",
 	"UnitInPartyIsAI",
 	"UnitInRaid",

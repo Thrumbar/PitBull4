@@ -72,7 +72,7 @@ function PitBull4_ThreatBar:GetExampleValue(frame)
 end
 
 function PitBull4_ThreatBar:GetColor(frame, value)
-	if frame.guid then
+	if frame.unit and UnitExists(frame.unit) then
 		local _, status = UnitDetailedThreatSituation(frame.unit, "target")
 		if status then
 			return GetThreatStatusColor(status)

@@ -47,7 +47,7 @@ function PitBull4_AltPowerBar:GetValue(frame)
 	if bar_info.barType then
 		if (unit == "player" or unit == "vehicle" or unit == "pet") or not bar_info.hideFromOthers then
 			visible = true
-		elseif bar_info.showOnRaid and (UnitInRaid(unit) or UnitInParty(unit)) then
+		elseif bar_info.showOnRaid and UnitInAnyGroup(unit) then
 			visible = true
 		end
 	end
