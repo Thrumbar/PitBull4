@@ -60,7 +60,7 @@ function PitBull4_Portrait:ClearFrame(frame)
 
 	portrait.style = nil
 	portrait.height = nil
-	portrait.unit = nil
+	portrait.guid = nil
 	portrait.full_body = nil
 	frame.Portrait = portrait:Delete()
 
@@ -112,6 +112,7 @@ function PitBull4_Portrait:UpdateFrame(frame)
 		portrait:SetHeight(60)
 		portrait.height = 4
 		portrait.style = style
+		portrait.guid = frame.guid
 
 		if style == "three_dimensional" then
 			local model = PitBull4.Controls.MakePlayerModel(frame)
@@ -132,19 +133,22 @@ function PitBull4_Portrait:UpdateFrame(frame)
 
 	local full_body = layout_db.full_body
 	portrait.full_body = full_body
-	portrait.unit = frame.unit
 	if style == "three_dimensional" then
-		portrait.model:ClearModel()
-		if not falling_back then
-			portrait.model:SetUnit(frame.unit)
-			portrait.model:SetPortraitZoom(full_body and 0 or 1)
-			portrait.model:SetPosition(0, 0, 0)
-			portrait.model:SetCamDistanceScale(layout_db.camera_distance)
-		else
-			portrait.model:SetModelScale(1) -- the scale gets screwed up if not reset before SetModel
-			portrait.model:SetModel([[Interface\Buttons\talktomequestionmark.m2]])
-			portrait.model:SetModelScale(3)
-			portrait.model:SetPosition(0, 0, -0.15)
+		local guid = UnitGUID(unit)
+		local should_update = created or (not issecretvalue(guid) and not issecretvalue(portrait.guid) and portrait.guid ~= guid)
+		if should_update then
+			portrait.model:ClearModel()
+			if not falling_back then
+				portrait.model:SetUnit(unit)
+				portrait.model:SetPortraitZoom(full_body and 0 or 1)
+				portrait.model:SetPosition(0, 0, 0)
+				portrait.model:SetCamDistanceScale(layout_db.camera_distance)
+			else
+				portrait.model:SetModelScale(1) -- the scale gets screwed up if not reset before SetModel
+				portrait.model:SetModel([[Interface\Buttons\talktomequestionmark.m2]])
+				portrait.model:SetModelScale(3)
+				portrait.model:SetPosition(0, 0, -0.15)
+			end
 		end
 	elseif style == "two_dimensional" then
 		portrait.texture:SetTexCoord(0.14644660941, 0.85355339059, 0.14644660941, 0.85355339059)

@@ -63,20 +63,25 @@ function PitBull4_Background:UpdateFrame(frame)
 		portrait:SetFrameLevel(frame:GetFrameLevel()) -- don't go above bars and indicators
 		portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -2)
 		portrait:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+		portrait.guid = frame.guid
 		frame.PortraitBG = portrait
 	end
 
-	portrait:ClearModel()
-	if not falling_back then
-		portrait:SetUnit(frame.unit)
-		portrait:SetPortraitZoom(1)
-		portrait:SetPosition(0, 0, 0)
-	elseif layout_db.fallback_style == "three_dimensional" then
-		portrait:SetModelScale(1)
-		portrait:SetModel([[Interface\Buttons\talktomequestionmark.m2]])
-		portrait:SetPosition(-0.55, 0, 0)
+	local guid = UnitGUID(unit)
+	local should_update = created or (not issecretvalue(guid) and not issecretvalue(portrait.guid) and portrait.guid ~= guid)
+	if should_update then
+		portrait:ClearModel()
+		if not falling_back then
+			portrait:SetUnit(frame.unit)
+			portrait:SetPortraitZoom(1)
+			portrait:SetPosition(0, 0, 0)
+		elseif layout_db.fallback_style == "three_dimensional" then
+			portrait:SetModelScale(1)
+			portrait:SetModel([[Interface\Buttons\talktomequestionmark.m2]])
+			portrait:SetPosition(-0.55, 0, 0)
+		end
+		portrait:Show()
 	end
-	portrait:Show()
 
 	return created
 end
