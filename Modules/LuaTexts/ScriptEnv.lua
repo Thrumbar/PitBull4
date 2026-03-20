@@ -883,9 +883,9 @@ local function InterruptedBy(interrupted_by)
 		local name = UnitNameFromGUID(interrupted_by)
 		if name then
 			local _, class = UnitClassFromGUID(interrupted_by)
-			local classColor = RAID_CLASS_COLORS[class]
+			local classColor = C_ClassColor.GetClassColor(class)
 			if classColor then
-				name = classColor:WrapTextInColorCode(name)
+				name = C_ColorUtil.WrapTextInColor(name, classColor)
 			end
 			return _G.SPELL_INTERRUPTED_BY:format(name)
 		end

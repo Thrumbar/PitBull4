@@ -96,6 +96,8 @@ globals = {
 	"C_AddOns",
 	"C_AzeriteItem",
 	"C_ChatInfo",
+	"C_ClassColor",
+	"C_ColorUtil",
 	"C_CreatureInfo",
 	"C_CurveUtil",
 	"C_DurationUtil",
