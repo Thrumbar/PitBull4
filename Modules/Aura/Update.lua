@@ -213,11 +213,11 @@ local function set_aura(frame, db, aura_controls, aura, i, is_friend)
 	control.slot = aura.weaponEnchantSlot
 	if aura.auraInstanceID then
 		control.duration = GetAuraDuration(unit, aura.auraInstanceID)
-		control.count = GetAuraApplicationDisplayCount(unit, aura.auraInstanceID)
+		control.count = GetAuraApplicationDisplayCount(unit, aura.auraInstanceID, 2)
 	else -- used in config mode
 		control.name = aura.name
 		control.duration = aura.duration
-		control.count = aura.applications
+		control.count = C_StringUtil.TruncateWhenZero(aura.applications)
 		control.debuff_type = aura.debuffType
 	end
 
