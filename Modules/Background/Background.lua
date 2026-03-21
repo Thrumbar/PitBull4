@@ -67,12 +67,11 @@ function PitBull4_Background:UpdateFrame(frame)
 		frame.PortraitBG = portrait
 	end
 
-	local guid = UnitGUID(unit)
-	local should_update = created or (not issecretvalue(guid) and not issecretvalue(portrait.guid) and portrait.guid ~= guid)
+	local should_update = created or (not issecretvalue(frame.guid) and not issecretvalue(portrait.guid) and portrait.guid ~= frame.guid)
 	if should_update then
 		portrait:ClearModel()
 		if not falling_back then
-			portrait:SetUnit(frame.unit)
+			portrait:SetUnit(unit)
 			portrait:SetPortraitZoom(1)
 			portrait:SetPosition(0, 0, 0)
 		elseif layout_db.fallback_style == "three_dimensional" then
@@ -80,8 +79,9 @@ function PitBull4_Background:UpdateFrame(frame)
 			portrait:SetModel([[Interface\Buttons\talktomequestionmark.m2]])
 			portrait:SetPosition(-0.55, 0, 0)
 		end
-		portrait:Show()
+		portrait.guid = frame.guid
 	end
+	portrait:Show()
 
 	return created
 end

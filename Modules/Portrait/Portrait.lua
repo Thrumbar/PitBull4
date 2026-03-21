@@ -134,8 +134,7 @@ function PitBull4_Portrait:UpdateFrame(frame)
 	local full_body = layout_db.full_body
 	portrait.full_body = full_body
 	if style == "three_dimensional" then
-		local guid = UnitGUID(unit)
-		local should_update = created or (not issecretvalue(guid) and not issecretvalue(portrait.guid) and portrait.guid ~= guid)
+		local should_update = created or (not issecretvalue(frame.guid) and not issecretvalue(portrait.guid) and portrait.guid ~= frame.guid)
 		if should_update then
 			portrait.model:ClearModel()
 			if not falling_back then
@@ -149,6 +148,7 @@ function PitBull4_Portrait:UpdateFrame(frame)
 				portrait.model:SetModelScale(3)
 				portrait.model:SetPosition(0, 0, -0.15)
 			end
+			portrait.guid = frame.guid
 		end
 	elseif style == "two_dimensional" then
 		portrait.texture:SetTexCoord(0.14644660941, 0.85355339059, 0.14644660941, 0.85355339059)
