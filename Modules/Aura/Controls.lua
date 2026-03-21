@@ -19,6 +19,16 @@ function Aura:GetUnit()
 end
 
 
+local dispel_types = tInvert({
+	-- None = 0,
+	Magic = 1,
+	Curse = 2,
+	Disease = 3,
+	Poison = 4,
+	Enrage = 9,
+	Bleed = 11,
+})
+
 -- Update handler for tooltips.
 function Aura:UpdateTooltip()
 	if self.id then
@@ -36,7 +46,7 @@ function Aura:UpdateTooltip()
 	else
 		-- Config Mode Sample Aura
 		GameTooltip:ClearLines()
-		GameTooltip:AddDoubleLine(self.name, self.debuff_type and L[self.debuff_type] or "", 1, 0.82, 0, 1, 0.82, 0)
+		GameTooltip:AddDoubleLine(self.name, L[dispel_types[self.debuff_type]] or "", 1, 0.82, 0, 1, 0.82, 0)
 		GameTooltip:AddLine(L["Sample aura created by PitBull to allow you to see the results of your configuration easily."], 1, 1, 1, 1)
 		if self.is_mine then
 			GameTooltip:AddLine(L["Aura shown as if cast by you."], 1, 0.82, 0, 1)
