@@ -675,7 +675,8 @@ function GroupHeader:RefreshGroup(dont_refresh_children)
 	end
 	self:SetAttribute("sortMethod", sort_method)
 	self:SetAttribute("sortDir", sort_direction)
-	self:SetAttribute("template", ClickCastHeader and "ClickCastUnitTemplate,PitBull4_UnitTemplate" or "PitBull4_UnitTemplate")
+	-- self:SetAttribute("template", ClickCastHeader and "ClickCastUnitTemplate,PitBull4_UnitTemplate" or "PitBull4_UnitTemplate")
+	self:SetAttribute("template", "PitBull4_UnitTemplate")
 	self:SetAttribute("templateType", "Button")
 	self:SetAttribute("groupBy", group_by)
 	local order = GROUPING_ORDER[group_db.group_by]
@@ -1955,10 +1956,6 @@ function GroupHeader:ConfigureChildren()
 			-- make a singleton unit frame and tack it onto our header
 			local frame_name = self:GetName() .. "UnitButton" .. frame_num
 			frame = CreateFrame("Button", frame_name, self, self:GetAttribute("template"))
-			if _G.PingableType_UnitFrameMixin then
-				Mixin(frame, _G.PingableType_UnitFrameMixin)
-				frame:SetAttribute("ping-receiver", true)
-			end
 
 			frame:Hide()
 			frame:EnableMouse(false) -- start disabled so the state change registers the button with Clique
