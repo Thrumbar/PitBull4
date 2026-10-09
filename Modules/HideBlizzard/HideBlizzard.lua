@@ -64,7 +64,6 @@ PitBull4_HideBlizzard.UpdateFrames = PitBull4:OutOfCombatWrapper(PitBull4_HideBl
 
 -----------------------------------------------------------------------------
 
-local noop = function() end
 local hide_frame = PitBull4:OutOfCombatWrapper(function(self) self:Hide() end)
 
 local hidden_frame = CreateFrame("Frame")
@@ -79,8 +78,6 @@ local function simple_hook_frames(...)
 			frame:UnregisterAllEvents()
 			frame:HookScript("OnShow", hide_frame)
 			frame:Hide()
-		elseif PitBull4.DEBUG then
-			geterrorhandler()(("PitBull4_HideBlizzard: Invalid simple frame at index %d"):format(i))
 		end
 	end
 end
@@ -99,13 +96,16 @@ local function hook_frames(raw, ...)
 			if frame.powerBarAlt then frame.powerBarAlt:UnregisterAllEvents() end
 
 			if raw then
-				frame.Show = noop
+				-- Never replace a Blizzard frame method directly. Mainline Edit Mode
+				-- calls Show() while refreshing its cast bar and arena systems; a
+				-- direct assignment taints that call chain before Blizzard accesses
+				-- secret-keyed casting-bar tables. A secure post-hook preserves the
+				-- original method and isolates our hide callback from Blizzard code.
+				hooksecurefunc(frame, "Show", hide_frame)
 			else
 				frame:SetParent(hidden_frame)
 				frame:HookScript("OnShow", hide_frame)
 			end
-		elseif PitBull4.DEBUG then
-			geterrorhandler()(("PitBull4_HideBlizzard: Invalid frame at index %d"):format(i))
 		end
 	end
 end
@@ -134,7 +134,14 @@ end
 
 if ClassicExpansionAtLeast(LE_EXPANSION_CATACLYSM) then
 	function hiders:runebar()
-		simple_hook_frames(RuneFrame, WarlockPowerFrame, MonkHarmonyBarFrame, PaladinPowerBarFrame, MageArcaneChargesFrame, EssencePlayerFrame)
+		local monk_bar = MonkHarmonyBarFrame
+		local paladin_bar = PaladinPowerBarFrame
+		if PitBull4.wow_classic then
+			monk_bar = monk_bar or MonkHarmonyBar
+			paladin_bar = paladin_bar or PaladinPowerBar
+		end
+		-- Class-resource frames are optional and use different Classic names.
+		simple_hook_frames(RuneFrame, WarlockPowerFrame, monk_bar, paladin_bar, MageArcaneChargesFrame, EssencePlayerFrame)
 	end
 end
 

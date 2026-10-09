@@ -1,0 +1,100 @@
+{
+  "version": "compat-20261008.3",
+  "lua_parser": "texluac Lua 5.3.6",
+  "lua_files": 227,
+  "xml_files": 91,
+  "root_manifests": 16,
+  "graphs": [
+    {
+      "toc": "PitBull4/PitBull4.toc",
+      "lua": 137,
+      "all_load_graph_files": 196
+    },
+    {
+      "toc": "PitBull4/PitBull4_Camelot.toc",
+      "lua": 137,
+      "all_load_graph_files": 196
+    },
+    {
+      "toc": "PitBull4/PitBull4_Cata.toc",
+      "lua": 145,
+      "all_load_graph_files": 209
+    },
+    {
+      "toc": "PitBull4/PitBull4_Classic.toc",
+      "lua": 141,
+      "all_load_graph_files": 204
+    },
+    {
+      "toc": "PitBull4/PitBull4_Mainline.toc",
+      "lua": 170,
+      "all_load_graph_files": 242
+    },
+    {
+      "toc": "PitBull4/PitBull4_Mists.toc",
+      "lua": 148,
+      "all_load_graph_files": 214
+    },
+    {
+      "toc": "PitBull4/PitBull4_TBC.toc",
+      "lua": 141,
+      "all_load_graph_files": 204
+    },
+    {
+      "toc": "PitBull4/PitBull4_Vanilla.toc",
+      "lua": 141,
+      "all_load_graph_files": 204
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts.toc",
+      "lua": 40,
+      "all_load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Camelot.toc",
+      "lua": 40,
+      "all_load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Cata.toc",
+      "lua": 40,
+      "all_load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Classic.toc",
+      "lua": 40,
+      "all_load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Mainline.toc",
+      "lua": 40,
+      "all_load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Mists.toc",
+      "lua": 40,
+      "all_load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_TBC.toc",
+      "lua": 40,
+      "all_load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Vanilla.toc",
+      "lua": 40,
+      "all_load_graph_files": 44
+    }
+  ],
+  "regression_assertions": 257,
+  "hide_blizzard_regression_assertions": 99,
+  "total_regression_assertions": 356,
+  "in_game_validation": false,
+  "lua_5_1_compiler_available": false,
+  "preserved_from_compat2": [
+    "PitBull4/UnitFrame.lua",
+    "PitBull4/Modules/CastBar/CastBar.lua",
+    "PitBull4/Controls/BetterStatusBar.lua",
+    "PitBull4/Modules/Aura/Filter.lua"
+  ]
+}

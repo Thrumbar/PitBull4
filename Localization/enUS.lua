@@ -396,6 +396,7 @@ L["Extra friend debuffs"] = true
 L["Extra friend highlights"] = true
 L["Fade"] = true
 L["Fade the bar changes."] = true
+L["Protected health and power use native smoothing. Fade and custom duration apply when values are readable."] = true
 L["Faders"] = true
 L["Faders cause the unit frame to become more or less opaque on certain conditions."] = true
 L["Failed"] = true
