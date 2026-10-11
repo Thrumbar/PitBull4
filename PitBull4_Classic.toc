@@ -14,7 +14,7 @@
 ## Author: ckknight, Shekfi, Nebula
 ## SavedVariables: PitBull4DB
 ## OptionalDeps: Ace3, LibSharedMedia-3.0, AceGUI-3.0-SharedMediaWidgets, LibDBIcon-1.0, LibBossIDs-1.0, Clique, Masque
-## Version: compat-20261010.3
+## Version: @project-version@
 ## X-PitBull4-Manifest: PitBull4_Classic.toc
 ## IconTexture: Interface\AddOns\PitBull4\pitbull.tga
 

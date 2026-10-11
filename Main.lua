@@ -451,7 +451,7 @@ _G.PitBull4 = PitBull4
 local DEBUG = PitBull4.DEBUG
 local expect = PitBull4.expect
 
-PitBull4.version = "compat-20261010.3"
+PitBull4.version = "@project-version@"
 if PitBull4.version:match("@") then
 	PitBull4.version = "Development"
 end

@@ -26,6 +26,8 @@ move-folders:
 
 ignore:
   - Docs
+  - Tests
+  - AGENTS.md
   - Libs/LibDeflate/*.md
   - Libs/LibDeflate/docs
   - Libs/LibDeflate/example
