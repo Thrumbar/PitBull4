@@ -1,6 +1,34 @@
 # PitBull Unit Frames 4.0
 
+## compat-20261010.3 — Midnight class-resource parent hotfix (2026-10-10)
+
+- Fixed the ClassPowerBar.lua:11 nil-parent error from WarlockPowerFrame combat callbacks on Retail Midnight 12.1.0 build 69933 (Interface 120100). The previous frame-toggle hotfix moved the bar away from its native managed container, breaking Blizzard's grandparent unit lookup when the bar had no cached unit.
+- Modern class-resource bars now retain native parenting and use the existing reversible alpha/mouse suppression. This covers Warlock, Death Knight, Monk, Paladin, Mage, and Evoker frames, including inactive bars, native setup/max-power updates, and Forever's matching modern implementation. Classic retains its previous suppression and resource-frame aliases.
+- Preserved immediate toggles outside combat, deferred restoration during combat, profile/module changes, Blizzard event registrations, resource pools, and native vehicle-unit resolution. The gameplay correction is confined to Modules/HideBlizzard/HideBlizzard.lua; release metadata and offline verification records are updated.
+- Reproduced the original line-11 failure against the supplied old release. All 1,453 offline assertions pass when the frame tests execute the supplied Retail Blizzard callbacks; the same 1,008 frame checks also pass against Retail 12.1.5 and Forever source. All 139 library files remain byte-identical, and changed-only packages contain no libraries. Interface declarations and saved-profile schema are retained. In-game delve/taint validation remains pending.
+
+## compat-20261010.2 — Reversible Blizzard frame toggles (2026-10-10)
+
+- Fixed Hide Blizzard frames options requiring a reload or relog to restore frames. Unchecking a frame group, changing profiles, or disabling the module now releases suppression immediately outside combat. Changes during combat are coalesced and applied afterward, including restoration after module disable.
+- Preserved Blizzard event registrations, native unit watches, party frame pools, current unit visibility, parent requests, and raid display preferences. Frames without a current unit or active cast remain hidden according to Blizzard's normal rules.
+- Added reversible parent suppression for unit/group/resource frames and reversible alpha/mouse suppression for cast bars and the alternate-power bar. Native cast bar methods and Edit Mode parenting remain intact; alpha values are passed through without arithmetic or comparisons.
+- Retained Mists class-resource aliases, accepted missing optional frames, and covered load-on-demand and lazily generated compact party/arena frames. Removed the obsolete reload notice and Reload UI option from this module.
+- All 1,257 offline assertions pass, including 812 frame-toggle checks. Every one of the 139 lib/libs files retains its original bytes and inventory. No dependency, saved-profile schema, or Interface declaration changes. In-game validation remains pending.
+
+## compat-20261010.1 — Application-only milestone 1 refactor (2026-10-10)
+
+- Restored all 139 bundled library files to the supplied scenario-target baseline, byte for byte. This reverts the milestone edits to AceGUI CheckBox, LibDualSpec, and the standalone DogTag compiler. No library files are added or removed.
+- Replaced PitBull's LibDualSpec dependency with application-owned specialization-profile switching in SpecProfiles.lua. Its library script and optional dependency declarations are no longer loaded; existing saved profile bindings and older alternate-profile data are retained.
+- Added application-owned native toggle, multiselect, three-state, and radio controls in Options/NativeControls.lua. PitBull's option provider routes these through its own registered control types, keeping the shared AceGUI CheckBox factory and version unchanged. The options container remains AceConfig/AceGUI during this migration.
+- Preserved the earlier health/bar, VisualHeal, Era atlas/spell, Mists frame-hiding, scenario-target, and Forever Interface 16001 changes.
+- Added project instructions, a 139-file SHA-256 baseline, and a library-boundary verifier for future milestones. Changed-only distributions exclude every lib/libs folder, including nested and standalone-addon libraries.
+- Added integration regressions against unchanged AceConfig/AceDB implementations. All 544 offline assertions pass; in-game validation remains pending.
+- The former DogTag whitespace-pattern edit is withdrawn. The compiler is preserved as supplied; replacing its dependent application path is deferred.
+- Use the full replacement to restore libraries from an earlier modified milestone. The application-only overlay cannot restore those files and is intended for a source/install with the supplied baseline libraries.
+
 ## compat-20261008.5 — Forever options checkbox hotfix (2026-10-08)
+
+Historical implementation: the library edits below were reverted and replaced by PitBull-owned controls in compat-20261010.1.
 
 - Fixed the Forever 1.60.1 options error in AceGUIWidget-CheckBox.lua by replacing all six removed global SetDesaturation calls with the native Texture:SetDesaturated method.
 - Bumped the CheckBox widget revision from 26 to 27 so AceGUI upgrades older registrations and discards older pooled widgets. Enabled, disabled, three-state, and radio behavior is preserved.
@@ -30,6 +58,8 @@
 - Strengthened offline texture API stubs and added regression coverage for atlas resets, control reuse, renderer transitions, unavailable spells, supported expansion spells, and saved-profile conversion. All 257 isolated assertions pass; in-game validation remains pending.
 
 ## compat-20261008.1 — Client initialization and shared-bar correctness (2026-10-08)
+
+Historical implementation: the LibDualSpec and DogTag library edits below were reverted in compat-20261010.1. Specialization profiles now use PitBull-owned code; the DogTag pattern edit is withdrawn.
 
 - Added Era/Camelot core and optional DogTag entry points with explicit module selections and manifest diagnostics.
 - Activated a private API adapter, separated Camelot identity from Classic, capability-checked restriction handling/events, and made specialization-profile startup optional.

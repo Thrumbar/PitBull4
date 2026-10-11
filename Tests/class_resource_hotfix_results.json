@@ -1,0 +1,158 @@
+{
+  "version": "compat-20261010.3",
+  "immediate_baseline_archive": "PitBull4_Frame_Toggle_Hotfix_Full_2026-10-10.zip",
+  "immediate_baseline_sha256": "4d3d1b0b1aa918964fd9a37a6d357ab09bf9964f04da8d700a09787f8556bb3b",
+  "reported_client": {
+    "version": "12.1.0",
+    "build": 69933,
+    "date": "2026-09-18",
+    "interface": 120100,
+    "family": "Retail Midnight"
+  },
+  "production_logic_files_changed": [
+    "PitBull4/Modules/HideBlizzard/HideBlizzard.lua"
+  ],
+  "changed_files": [
+    "PitBull4/CHANGELOG.md",
+    "PitBull4/COMPATIBILITY_VALIDATION.md",
+    "PitBull4/Main.lua",
+    "PitBull4/Modules/DogTagTexts/PitBull4_DogTagTexts.toc",
+    "PitBull4/Modules/DogTagTexts/PitBull4_DogTagTexts_Camelot.toc",
+    "PitBull4/Modules/DogTagTexts/PitBull4_DogTagTexts_Cata.toc",
+    "PitBull4/Modules/DogTagTexts/PitBull4_DogTagTexts_Classic.toc",
+    "PitBull4/Modules/DogTagTexts/PitBull4_DogTagTexts_Mainline.toc",
+    "PitBull4/Modules/DogTagTexts/PitBull4_DogTagTexts_Mists.toc",
+    "PitBull4/Modules/DogTagTexts/PitBull4_DogTagTexts_TBC.toc",
+    "PitBull4/Modules/DogTagTexts/PitBull4_DogTagTexts_Vanilla.toc",
+    "PitBull4/Modules/HideBlizzard/HideBlizzard.lua",
+    "PitBull4/PitBull4.toc",
+    "PitBull4/PitBull4_Camelot.toc",
+    "PitBull4/PitBull4_Cata.toc",
+    "PitBull4/PitBull4_Classic.toc",
+    "PitBull4/PitBull4_Mainline.toc",
+    "PitBull4/PitBull4_Mists.toc",
+    "PitBull4/PitBull4_TBC.toc",
+    "PitBull4/PitBull4_Vanilla.toc",
+    "PitBull4/Tests/README.md",
+    "PitBull4/Tests/class_resource_hotfix_results.json",
+    "PitBull4/Tests/hide_blizzard_regressions.lua",
+    "PitBull4_DogTagTexts/PitBull4_DogTagTexts.toc",
+    "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Camelot.toc",
+    "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Cata.toc",
+    "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Classic.toc",
+    "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Mainline.toc",
+    "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Mists.toc",
+    "PitBull4_DogTagTexts/PitBull4_DogTagTexts_TBC.toc",
+    "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Vanilla.toc"
+  ],
+  "original_failure": {
+    "baseline_version": "compat-20261010.2",
+    "source": "12.1.0.69933/Blizzard_UnitFrame/ClassPowerBar.lua",
+    "line": 11,
+    "result": "attempt to index a nil value",
+    "baseline_fixture_exit_code": 1
+  },
+  "assertions": {
+    "compatibility": 252,
+    "hide_blizzard_with_original_blizzard_source": 1008,
+    "native_options": 130,
+    "spec_profiles": 63,
+    "total_with_original_blizzard_source": 1453,
+    "hide_blizzard_without_external_source": 980,
+    "default_total": 1425
+  },
+  "original_blizzard_source_runs": [
+    {
+      "client": "Retail 12.1.0.69933",
+      "assertions": 1008,
+      "result": "pass"
+    },
+    {
+      "client": "Retail 12.1.5.70077",
+      "assertions": 1008,
+      "result": "pass"
+    },
+    {
+      "client": "Forever 1.60.1.70338",
+      "assertions": 1008,
+      "result": "pass"
+    }
+  ],
+  "runtime": "texlua Lua 5.3.6",
+  "lua_parser": "texluac Lua 5.3.6",
+  "owned_lua_files_parsed": 122,
+  "xml_files_parsed": 91,
+  "root_manifest_graphs": [
+    {
+      "toc": "PitBull4/PitBull4.toc",
+      "load_graph_files": 197
+    },
+    {
+      "toc": "PitBull4/PitBull4_Camelot.toc",
+      "load_graph_files": 197
+    },
+    {
+      "toc": "PitBull4/PitBull4_Cata.toc",
+      "load_graph_files": 210
+    },
+    {
+      "toc": "PitBull4/PitBull4_Classic.toc",
+      "load_graph_files": 205
+    },
+    {
+      "toc": "PitBull4/PitBull4_Mainline.toc",
+      "load_graph_files": 243
+    },
+    {
+      "toc": "PitBull4/PitBull4_Mists.toc",
+      "load_graph_files": 215
+    },
+    {
+      "toc": "PitBull4/PitBull4_TBC.toc",
+      "load_graph_files": 205
+    },
+    {
+      "toc": "PitBull4/PitBull4_Vanilla.toc",
+      "load_graph_files": 205
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts.toc",
+      "load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Camelot.toc",
+      "load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Cata.toc",
+      "load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Classic.toc",
+      "load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Mainline.toc",
+      "load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Mists.toc",
+      "load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_TBC.toc",
+      "load_graph_files": 44
+    },
+    {
+      "toc": "PitBull4_DogTagTexts/PitBull4_DogTagTexts_Vanilla.toc",
+      "load_graph_files": 44
+    }
+  ],
+  "application_manifest_versions_aligned": 24,
+  "interface_declarations": "Unchanged; Retail 120100, 120105 retained.",
+  "library_files_unchanged": 139,
+  "changed_only_library_entries": 0,
+  "classic_resource_path": "Unchanged: existing parent suppression and optional Mists aliases.",
+  "warcraft_runtime_validation": "Pending; offline fixtures do not certify secrecy, taint, secure execution, actual layouts, or performance.",
+  "lua_51_validation": "Code retains Lua 5.1-compatible syntax; a Lua 5.1 compiler was unavailable."
+}

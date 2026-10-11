@@ -451,7 +451,7 @@ _G.PitBull4 = PitBull4
 local DEBUG = PitBull4.DEBUG
 local expect = PitBull4.expect
 
-PitBull4.version = "compat-20261008.5"
+PitBull4.version = "compat-20261010.3"
 if PitBull4.version:match("@") then
 	PitBull4.version = "Development"
 end
@@ -1398,11 +1398,6 @@ function PitBull4:OnInitialize()
 	db.RegisterCallback(self, "OnNewProfile")
 	db.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
 
-	local LibDualSpec = LibStub("LibDualSpec-1.0", true)
-	if LibDualSpec then
-		LibDualSpec:EnhanceDatabase(db, "PitBull4")
-	end
-
 	self.DEFAULT_COLORS = CopyTable(DATABASE_DEFAULTS.profile.colors.power)
 	DATABASE_DEFAULTS = nil
 
@@ -1451,6 +1446,9 @@ function PitBull4:OnInitialize()
 	if oRA3 then
 		oRA3.RegisterCallback(self, "OnTanksUpdated")
 	end
+
+	-- A saved binding may switch profiles immediately and invoke module callbacks.
+	self.SpecProfiles = namespace.SpecProfiles.Attach(self, db)
 end
 
 do

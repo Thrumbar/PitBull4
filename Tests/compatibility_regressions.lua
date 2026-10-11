@@ -332,33 +332,6 @@ check(visual:UpdateFrame(vf),'overlay survives control replacement')
 check(old.deleted,'old overlay parent is released')
 equal(vf.VisualHeal:GetParent(),vf.HealthBar,'overlay is reparented to replacement')
 
-local era=environment(2,0)
-era.C_Seasons={GetActiveSeason=function() return 0 end}
-era.LibStub=function() error('regular Era library should return before initialization') end
-load_in(root..'Libs/LibDualSpec-1.0/LibDualSpec-1.0.lua',era,'PitBull4',{})
-check(true,'regular Era specialization library safely declines')
-local se=environment(1,11)
-se.wipe=function(t) for k in pairs(t) do t[k]=nil end end
-se.CreateFrame=function() return widget() end
-se.UnitClassBase=function() return 'MAGE',8 end
-se.GetSpecializationInfoForClassID=function(_,index) return index,'Spec '..index end
-se.GetLocale=function() return 'enUS' end
-se.strmatch=string.match
-se.IsLoggedIn=function() return true end
-se.C_SpecializationInfo={GetSpecialization=function() return 3 end,GetActiveSpecGroup=function() return 1 end,GetNumSpecializationsForClassID=function() return 3 end,CanPlayerUseTalentSpecUI=function() return true end}
-local _,ns=load_compat(se)
-load_in(root..'Libs/LibStub/LibStub.lua',se)
-load_in(root..'Libs/LibDualSpec-1.0/LibDualSpec-1.0.lua',se,'PitBull4',ns)
-equal(se.LibStub('LibDualSpec-1.0').currentSpec,3,'native specialization replaces talent group fallback')
-
-local f=assert(io.open(root..'Main.lua','rb'));local source=f:read('*a');f:close()
-local guarded=assert(source:match('(local LibDualSpec = LibStub%("LibDualSpec%-1%.0", true%)%s+if LibDualSpec then%s+LibDualSpec:EnhanceDatabase%(db, "PitBull4"%)%s+end)'))
-local calls=0
-assert(load(guarded,'database guard','t',{LibStub=function() return nil end,db={}}))()
-check(true,'initialization guard accepts missing optional library')
-assert(load(guarded,'database guard','t',{LibStub=function() return {EnhanceDatabase=function() calls=calls+1 end} end,db={}}))()
-equal(calls,1,'available specialization support still enhances database')
-equal(('value;   '):gsub(';%s*$',''),'value','DogTag whitespace pattern')
 -- Execute the real shared update handler with the health module.
 local ie,ipb=addon_environment()
 local live={current=50,maximum=100,percent=0.5,dead=false}

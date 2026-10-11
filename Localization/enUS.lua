@@ -14,6 +14,10 @@ L["Show Evoker Essence charges."] = true
 L["Hostile"] = _G.FACTION_STANDING_LABEL2
 L["Hostile, Long-range"] = true
 L["Friendly"] = _G.FACTION_STANDING_LABEL5
+L["Enable spec profiles"] = true
+L["When enabled, your profile changes with your specialization."] = true
+L["Specialization %d"] = true
+L["%s - Active"] = true
 
 
 L["%s can dispel"] = true
