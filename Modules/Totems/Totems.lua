@@ -1,6 +1,5 @@
+local addon_name, PitBull4 = ...
 local player_class = UnitClassBase("player")
-
-local PitBull4 = _G.PitBull4
 local L = PitBull4.L
 
 -- CONSTANTS ----------------------------------------------------------------
@@ -43,7 +42,7 @@ local TOTEM_SIZE = 50 -- fixed value used for internal frame creation, change th
 local CONFIG_MODE_ICON = [[Interface\Icons\Spell_Fire_TotemOfWrath]]
 local BORDER_PATH = [[Interface\AddOns\PitBull4\Modules\Totems\border]]
 local DEFAULT_SOUND_NAME = "Drop"
-local DEFAULT_SOUND_PATH = [[Sound\Interface\DropOnGround.ogg]]
+local DEFAULT_SOUND_FILE_ID = 567460 -- sound/interface/droponground.ogg
 
 local COLOR_DEFAULTS = {
 	main_background = {0, 0, 0, 0.5},
@@ -219,7 +218,7 @@ local PitBull4_Totems = PitBull4:NewModule("Totems")
 
 local LibSharedMedia = LibStub("LibSharedMedia-3.0", true)
 if LibSharedMedia then
-	LibSharedMedia:Register("sound", DEFAULT_SOUND_NAME, DEFAULT_SOUND_PATH)
+	LibSharedMedia:Register("sound", DEFAULT_SOUND_NAME, DEFAULT_SOUND_FILE_ID)
 end
 
 -- Register some metadata of ours with PB4
@@ -627,11 +626,11 @@ function PitBull4_Totems:PLAYER_TOTEM_UPDATE(event, slot)
 
 		-- Sound functions
 		if global_option_get('death_sound') and event then
-			local soundpath = DEFAULT_SOUND_PATH
+			local sound_file = DEFAULT_SOUND_FILE_ID
 			if LibSharedMedia then
-				soundpath = LibSharedMedia:Fetch("sound", global_option_get("sound_slot"..tostring(slot)))
+				sound_file = LibSharedMedia:Fetch("sound", global_option_get("sound_slot"..tostring(slot))) or DEFAULT_SOUND_FILE_ID
 			end
-			PlaySoundFile(soundpath)
+			PlaySoundFile(sound_file)
 		end
 	end
 end

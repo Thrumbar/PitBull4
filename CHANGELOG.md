@@ -1,6 +1,21 @@
 # PitBull4 — Consolidated Changelog
 
-Consolidated change history through **compat-20261013.1**, including Stages 01–01AM and the subsequent compatibility releases. Documentation updated **2026-10-13**.
+Consolidated change history through **compat-20261015.1**, including Stages 01–01AM and the subsequent compatibility releases. Documentation updated **2026-10-15**. Release labels identify these changes; source version fields retain `@project-version@` for the packager.
+
+## compat-20261015.1 — Totem sound registration (2026-10-15)
+
+- Replaced the obsolete default totem sound path with FileDataID `567460`, correcting the LibSharedMedia missing-file error during Totems module loading and the default playback path.
+- Preserved the existing `Drop` profile value, per-element custom sound choices, sound previews, and silent world-entry updates. An unresolved media lookup falls back to the default file ID.
+- Loaded Totems through the private addon namespace. Retained the October 13 status-bar corrections, all packager version tokens, existing secure frame behavior, and all 139 locked library files.
+- Passed 147 focused startup, playback, profile, and options checks, plus the 130 existing native-options assertions. Live audio confirmation remains pending; the separate incomplete Edit Mode trace remains undiagnosed.
+
+## compat-20261013.2 — Revised status-bar refactor (2026-10-13)
+
+- Restored exact `@project-version@` placeholders in all application TOCs and the runtime version string, preserving automated release substitution and the existing development-build fallback.
+- Moved reputation event dispatch to one unnamed native frame in the private addon namespace. The frame and callback are reused across module toggles; disabling unregisters its events and clears the cached display state.
+- Cached one reputation snapshot per event for all player frames. Display queries reuse scalar values, with no new polling script, table creation, or frame creation in this module's update paths.
+- Selected modern reputation APIs on Retail with legacy and capability fallbacks for other clients. Handled unavailable faction/renown data, unreadable values, and invalid paragon thresholds safely. Replaced the friendship UI-mixin dependency with private rank-color calculation matching Blizzard's behavior.
+- Retained the shared status-bar hook removal, class-resource correction, secure unit frames and headers, saved profiles, and all 139 library files. All 2,198 offline assertions pass; live-client confirmation remains pending.
 
 ## compat-20261013.1 — Reputation and status-bar compatibility (2026-10-13)
 
@@ -69,9 +84,9 @@ Consolidated change history through **compat-20261013.1**, including Stages 01�
 - Earlier guarded normalization, secure-call, and string-conversion experiments were superseded by later access-aware boundaries and native rendering corrections.
 - Consolidated **82 changelog files** into this single document, removing repeated stage/Git copies, redundant explanations, testing prompts, and unrelated-addon notes.
 
-## Verification
+## Earlier status-bar verification (compat-20261013.2)
 
-The current hotfix passed **1,748 offline assertions**, including **295 reputation/status-bar checks** and the existing compatibility, frame, options, and profile suites. Both original status-tracking and override-experience event paths ran against all five supplied client sources. Class-resource callbacks also passed against the updated Retail 12.1.5 build 70391 source. Earlier static checks covered **122 application Lua files**, **91 XML files**, and **16 root manifest load graphs**; current validation details are in `COMPATIBILITY_VALIDATION.md`.
+The revised status-bar hotfix passed **2,198 offline assertions**, including **745 reputation/status-bar checks** and the existing compatibility, frame, options, and profile suites. Both original status-tracking and override-experience event paths ran against all five supplied client sources. Class-resource callbacks also passed against the updated Retail 12.1.5 build 70391 source. Packager-token checks and all **16 root manifest load graphs** pass. Earlier static checks covered **122 application Lua files** and **91 XML files**; current validation details are in `COMPATIBILITY_VALIDATION.md`.
 
 These results do not certify live-client secrecy, taint, secure execution, layout, or performance. In-game validation remains pending.
 
